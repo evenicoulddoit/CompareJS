@@ -1,0 +1,88 @@
+#pages {
+  @include clearfix;
+
+  .container {
+    float: left;
+    width: 48%;
+    overflow: hidden;
+  }
+}
+
+#loading {
+  height: 60px;
+  line-height: 60px;
+  width: 4%;
+  float: left;
+  font-size: 2vw;
+  color: $color_one;
+  text-align: center;
+  opacity: 0;
+  @include single-transition(opacity, 0.25s, ease);
+
+  &.visible {
+    opacity: 1;
+  }
+}
+
+input,
+button {
+  padding: 10px 14px;
+  font-size: 2em;
+  margin: 0;
+}
+
+.pages-input {
+  border: 1px solid #ccc;
+  display: block;
+  width: 100%;
+  @include box-sizing(border-box);
+
+  &:focus {
+    border-color: #666;
+  }
+
+  &::-webkit-input-placeholder {
+    opacity: 0.6;
+  }
+}
+
+#page-a {
+  color: $color_two;
+}
+
+#page-a::-webkit-input-placeholder {
+  color: $color_two;
+}
+
+#page-b {
+  color: $color_three;
+}
+
+#page-b::-webkit-input-placeholder {
+  color: $color_three;
+}
+
+#do-compare,
+#settings {
+  margin-top: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+#do-compare {
+  color: $color_light;
+  background-color: $color_one;
+
+  &:hover {
+    background-color: lighten($color_one, 2%);
+  }
+}
+
+#settings {
+  color: lighten($color_copy, 30%);
+  background-color: darken($color_light, 12%);
+
+  &:hover {
+    background-color: darken($color_light, 10%);
+  }
+}

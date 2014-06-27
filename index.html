@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Compare.js</title>
+    <link href="static/css/main.css" rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css"
+          type="text/css" rel="stylesheet">
+  </head>
+  <body>
+    <div id="wrapper">
+      <h1>Compare.js</h1>
+      <div id="pages">
+        <div class="container">
+          <input id="page-a" class="pages-input" type="text" placeholder="a.html" />
+        </div>
+        <div id="loading">
+          <i class="fa fa-spin fa-spinner"></i>
+        </div>
+        <div class="container">
+          <input id="page-b" class="pages-input" type="text" placeholder="b.html" />
+        </div>
+      </div>
+      <button id="do-compare" type="button">Compare</button>
+      <button id="settings"><i class="fa fa-cog"></i></button>
+      <div id="response">
+        <h2 id="response-highlights">
+          <i id="response-icon"></i>
+          <span id="response-summary"></span>
+        </h2>
+        <div id="response-details">
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="static/js/main.min.js"></script>
+  </body>
+</html>

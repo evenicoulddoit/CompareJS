@@ -1,0 +1,9 @@
+#wrapper {
+  width: 80vw;
+  margin: 20vh auto 0;
+  @include single-transition(margin-top, 1s, ease);
+
+  &.with-response {
+    margin-top: 5vh;
+  }
+}
