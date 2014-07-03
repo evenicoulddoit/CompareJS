@@ -63,10 +63,15 @@ button {
 }
 
 #do-compare,
-#settings {
+#do-start-over,
+#settings-toggle {
   margin-top: 10px;
   border: none;
   cursor: pointer;
+
+  &.disabled {
+    opacity: 0.75;
+  }
 }
 
 #do-compare {
@@ -78,11 +83,75 @@ button {
   }
 }
 
-#settings {
+#do-start-over {
+  display: none;
+  background: $color_two;
+  color: $color_light;
+
+  .mode-continuous & {
+    display: inline-block;
+  }
+}
+
+#settings-toggle {
+  position: relative;
   color: lighten($color_copy, 30%);
   background-color: darken($color_light, 12%);
 
   &:hover {
-    background-color: darken($color_light, 10%);
+    background-color: darken($color_light, 8%);
+  }
+
+  &.open,
+  &:hover.open {
+    background-color: darken($color_light, 8%);
+
+    &:before {
+      content: "";
+      position: absolute;
+      display: block;
+      left: 0;
+      right: 0;
+      bottom: -4px;
+      border-bottom: 4px solid darken($color_light, 8%);
+    }
+  }
+}
+
+#settings {
+  @include clearfix();
+  margin-top: 4px;
+  background-color: darken($color_light, 8%);
+  display: none;
+  color: lighten($color_copy, 20%);
+
+  .open + & {
+    display: block;
+  }
+
+  label {
+    font-weight: 700;
+  }
+
+  .option {
+    @include box-sizing(border-box);
+    overflow: hidden;
+    width: 33%;
+    padding: 20px;
+    float: left;
+
+    &.not-implemented {
+      opacity: 0.5;
+    }
+  }
+
+  input[type="text"],
+  select {
+    @include box-sizing(border-box);
+    display: block;
+    width: 100%;
+    padding: 5px;
+    font-size: 1em;
+    margin: 3px 0;
   }
 }

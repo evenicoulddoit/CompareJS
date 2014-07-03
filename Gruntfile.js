@@ -8,7 +8,11 @@ module.exports = function(grunt) {
     'closure-compiler': {
       frontend: {
         closurePath: '/home/ian/apps/closure-compiler',
-        js: ['static/src/js/*.js'],
+        js: [
+          'static/src/js/specificity.js',
+          'static/src/js/compare.js',
+          'static/src/js/main.js',
+          ],
         jsOutputFile: 'static/js/main.min.js',
         sourceMapUrl: true,
         maxBuffer: 500,

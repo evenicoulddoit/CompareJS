@@ -3,7 +3,11 @@
   margin: 20vh auto 0;
   @include single-transition(margin-top, 1s, ease);
 
-  &.with-response {
+  .mode-single &.with-response {
     margin-top: 5vh;
+  }
+
+  .mode-continuous &.with-response {
+    margin-top:2vh;
   }
 }

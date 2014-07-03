@@ -16,6 +16,10 @@ h1 {
   line-height: 2;
   font-size: 3em;
   color: $color_one;
+
+  .mode-continuous .with-response & {
+    font-size: 2em;
+  }
 }
 
 h2 {
@@ -24,7 +28,24 @@ h2 {
 }
 
 iframe {
-  display: none;
+  .mode-single & {
+    position: absolute;
+    height: 1000px;
+    width: 1000px;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .mode-continuous & {
+    @include box-sizing(border-box);
+    border: 1px solid lighten($color_copy, 50%);
+    width: 48%;
+    height: 300px;
+
+    &:first-child {
+      margin-right: 4%;
+    }
+  }
 }
 
 p {
@@ -56,10 +77,10 @@ code {
   border: 1px solid rgba($color_copy, 0.1);
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: pre-wrap;
   font-size: 0.8em;
   line-height: 1.5;
-  background-color: lighten($color_light, 0.4);
+  background-color: lighten($color_light, 0.9);
 
   &.a {
     color: $color_two;
@@ -67,7 +88,14 @@ code {
   &.b {
     color: $color_three;
   }
+  &.c {
+    color: $color_four;
+  }
   &.removed {
     text-decoration: line-through;
   }
+}
+
+button {
+  outline: none;
 }

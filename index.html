@@ -6,7 +6,7 @@
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css"
           type="text/css" rel="stylesheet">
   </head>
-  <body>
+  <body class="mode-single">
     <div id="wrapper">
       <h1>Compare.js</h1>
       <div id="pages">
@@ -21,7 +21,33 @@
         </div>
       </div>
       <button id="do-compare" type="button">Compare</button>
-      <button id="settings"><i class="fa fa-cog"></i></button>
+      <button id="do-start-over" type"button">
+        <i class="fa fa-undo"></i>
+      </button>
+      <button id="settings-toggle"><i class="fa fa-cog"></i></button>
+      <div id="settings">
+        <div class="option">
+          <label>
+            Cache-bust
+          </label>
+          <select id="settings-cache-bust">
+            <option value="yes" selected="selected">Yes</option>
+            <option value="no" >No</option>
+          </select>
+        </div>
+        <div class="option">
+          <label>Mode</label>
+          <select id="settings-mode">
+            <option value="single">Single visit</option>
+            <option value="continuous">Continued visit</option>
+          </select>
+        </div>
+        <div class="option not-implemented">
+          <label>Exclude</label>
+          <input id="settings-exclude" type="text" />
+        </div>
+      </div>
+      <div id="iframes"></div>
       <div id="response">
         <h2 id="response-highlights">
           <i id="response-icon"></i>

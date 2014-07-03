@@ -1,3 +1,13 @@
+#iframes {
+  display: none;
+
+  .mode-continuous .with-response & {
+    @include clearfix();
+    display: block;
+    margin-top: 40px;
+  }
+}
+
 #response {
   margin-top: 40px;
   padding-top: 40px;
