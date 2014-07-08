@@ -112,6 +112,7 @@
 
     if(computedDifferences.length) {
       ruleDifferences = styleRuleDifference(elemA, elemB);
+
       for(difference in ruleDifferences) {
         if(computedDifferences.filter(_startsWith(difference)).length > 0) {
           if(ruleDifferences[difference][0] !== undefined) {
@@ -135,7 +136,8 @@
   }
 
   /**
-   * Find the computed style differences between two elements
+   * Find the computed style differences between two elements. Ignore the domain
+   * such that background images etc. don't return false-positives
    * @param  {Element} elemA 
    * @param  {Element} elemB
    * @return {Array} - An array of property names
@@ -143,6 +145,8 @@
   function styleComputedDifferences(elemA, elemB) {
     var stylesA = window.getComputedStyle(elemA),
         stylesB = window.getComputedStyle(elemB),
+        domainA = elemA.ownerDocument.URL.split("/").slice(0, 3).join("/"),
+        domainB = elemB.ownerDocument.URL.split("/").slice(0, 3).join("/"),
         differences = [],
         count = stylesA.length, rule, i;
 
@@ -150,7 +154,8 @@
     for(i = 0; i < count; i ++) {
       rule = stylesA[i];
 
-      if(stylesA.getPropertyValue(rule) != stylesB.getPropertyValue(rule)) {
+      if(stylesA.getPropertyValue(rule).replace(domainA, "") != 
+         stylesB.getPropertyValue(rule).replace(domainB, "")) {
         differences.push(rule);
       }
     }
@@ -229,24 +234,27 @@
       // Loop through all the rules within the sheet
       for(j = 0; j < rules.length; j++) {
         rule = rules[j];
-        selectors = rule.selectorText.split(",");
-        specs = [];
 
-        // Loop through all selectors for the rule
-        for(k = 0; k < selectors.length; k++) {
-          selector = selectors[i];
+        if(rule.type === 1) {
+          selectors = rule.selectorText.split(",");
+          specs = [];
 
-          // If the selector matches this element, store its specificity value
-          if(elementMatches(element, selector)) {
-            specs.push(specificity(selector));
+          // Loop through all selectors for the rule
+          for(k = 0; k < selectors.length; k++) {
+            selector = selectors[i];
+
+            // If the selector matches this element, store its specificity value
+            if(elementMatches(element, selector)) {
+              specs.push(specificity(selector));
+            }
           }
-        }
 
-        // If anything matched, pull off the most specific and add all
-        // specificity-beating rules
-        if(specs.length) {
-          spec = Math.max.apply(Math, specs);
-          specificityAdd(spec, styles, rule.style);
+          // If anything matched, pull off the most specific and add all
+          // specificity-beating rules
+          if(specs.length) {
+            spec = Math.max.apply(Math, specs);
+            specificityAdd(spec, styles, rule.style);
+          }
         }
       }
     }
@@ -277,27 +285,6 @@
       }
     }
   }
-
-  /*var DIRECTIONS = ["top", "right", "bottom", "left"],
-      SHORTHANDABLE = {
-        "margin": {
-          directions: true
-        },
-        "padding": {
-          directions: true
-        },
-        "border": {
-          directions: true,
-          properties: ["width", "style", "color"]
-        },
-        "background": {
-          properties: ["image", "position", "size", "repeat", "origin", "style",
-                       "clip", "color"]
-        },
-        "list-style": {
-          properties: ["type", "position", "image"]
-        }
-      };*/
 
   function equalValues(obj, keys) {
     var length = keys.length,
@@ -367,104 +354,6 @@
     });
   }
 
-  /*
-  function allSame() {
-
-  }
-
-  function allPresent(findRegex, differences, index) {
-    var keys, length, i;
-
-    keys = Object.keys(differences).filter(function(key) {
-      return key.match(findRegex) !== null;
-    });
-
-    for(i = 0; i < length; i ++) {
-      if(differences[keys[i]][index] === undefined) return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * Convert a series of long-hand CSS rules, into their short-hand equivalents
-   * @param  {Object} differences
-   * @return {Object} - The sorted differences
-   /
-  function shorthandStyleDifferences(differences) {
-    var convertedA = {},
-        convertedB = {},
-        shorted = {},
-        i = 0,
-        splits, propertyName, styleA, styleB, rule;
-
-    for(rule in differences) {
-      splits = rule.split("-");
-      propertyName = splits[0];
-      styleA = differences[rule][0];
-      styleB = differences[rule][1];
-
-      // Ignore vendor prefixes
-      if(!startsWith(rule, "-") && SHORTHANDABLE.hasOwnProperty(propertyName)) {
-        i ++;
-        if(styleA !== undefined) shorthandMap(propertyName, splits, styleA, convertedA);
-        if(styleB !== undefined) shorthandMap(propertyName, splits, styleB, convertedB);
-        // delete differences[rule]
-      }
-    }
-
-    convertToShorthand(convertedA);
-    convertToShorthand(convertedB);
-
-    if(i) {
-      console.log(convertedA, convertedB);
-    }
-
-    /*for(rule in convertedA) {
-      if(SHORTHANDABLE[rule].directions === true) {
-        if(styleDirectionsEqual(convertedA[rule])) {
-
-          // Just take one of the directions as the one for all
-        }
-        else {
-          // Loop through and combine for each
-        }
-        console.log(rule, styleDirectionsEqual(convertedA[rule]));
-      }
-      else {
-
-      }
-    }
-
-    for(rule in convertedB) {
-      if(SHORTHANDABLE[rule].directions === true) {
-        console.log(rule, styleDirectionsEqual(convertedB[rule]));
-      }
-    }/
-  }
-
-  function shorthandMap(property, splits, value, obj) {
-    var attributes = SHORTHANDABLE[property], rule;
-
-    if(attributes.hasOwnProperty("properties")) {
-      property = splits.pop();
-      rule = splits.join("-");
-      if(!(obj.hasOwnProperty(rule))) {
-        obj[rule] = new Array(attributes.properties.length);
-      }
-      obj[rule][attributes.properties.indexOf(property)] = value;
-      splits.push(property);
-    }
-    else {
-      obj[splits.join("-")] = value;
-    }
-  }
-
-  function convertToShorthand(styles) {
-    //var style;
-    //for()
-  }
-
   function spaceImportant(node, nextFn) {
     var previous = node;
     while(true) {
@@ -523,25 +412,45 @@
    * @returns {Node|null}
    * @memberof Compare
    */
-  function goForward(last, stop, any) {
+  function goForward(opts) {
     var forward;
 
-    if(!last) return goForward(stop, stop, any);
+    if(!opts.last) {
+      opts.last = opts.stop;
+      return goForward(opts);
+    }
+
+    forward = _goForward(opts);
+    if(forward !== null && opts.exclude && onExclusionList(forward, opts.exclude)) {
+      opts.no_down = true;
+      opts.last = forward;
+      return goForward(opts);
+    }
+
+    return forward;
+  }
+
+  function _goForward(opts) {
+    var last = opts.last, forward;
 
     // Down
-    forward = getFirstChild(last, any);
-    if(forward) return forward;
+    if(!opts.no_down) {
+      forward = getFirstChild(last, opts.all);
+      if(forward) return forward;
+    }
+
+    opts.no_down = false;
 
     // Along
-    forward = nextElement(last, any);
+    forward = nextElement(last, opts.all);
     if(forward) return forward;
 
     // Up
-    while(last != stop) {
+    while(last != opts.stop) {
       last = last.parentNode;
-      if(last == stop) return null;
+      if(last == opts.stop) return null;
 
-      forward = nextElement(last, any);
+      forward = nextElement(last, opts.all);
       if(forward) return forward;
     }
   }
@@ -574,6 +483,35 @@
       return from.children[from.children.length-1];
     }
     return null;
+  }
+
+  /**
+   * Return whether an element matches any of the provided list of exclusions
+   * @param  {Element} elem
+   * @param  {Array} list - The list of exclusion objecta
+   * @return {Object|Boolean} - Either the exclusion rule or false
+   */
+  function onExclusionList(elem, list) {
+    var exclude_length = list.length,
+        exclude, i, attr;
+
+    outer:
+    for(i = 0; i < exclude_length; i++) {
+      exclude = list[i];
+
+      if(exclude.hasOwnProperty("tag") && exclude.tag !== elem.tagName) {
+        continue;
+      }
+      if(exclude.hasOwnProperty("attributes")) {
+        for(attr in exclude.attributes) {
+          if(exclude.attributes[attr] !== elem.getAttribute(attr)) {
+            continue outer;
+          }
+        }
+      }
+      return exclude;
+    }
+    return false;
   }
 
   function nodeType(node) {
@@ -669,6 +607,7 @@
       throw new TypeError("You must supply both DOM tree A and B");
     }
 
+    this.opts = opts;
     this.a = opts.a;
     this.b = opts.b;
 
@@ -679,8 +618,8 @@
 
     this.differenceCount = 0;
     this.differences = {
-      retag: [],
-      reattribute: [],
+      tag: [],
+      attr: [],
       removed: [],
       added: [],
       text: [],
@@ -689,20 +628,13 @@
       style: []
     };
 
+    this.parse_exclusions();
     this.signatureMap = {};
-    this._parse_elements();
 
     try {
+      this._parse_elements();
       this._process_imbalances();
       this._find_movements();
-
-      // We can only realistically compare visuals if nothing has been added,
-      // removed, or moved
-      if(this.differences.removed.length === 0 &&
-         this.differences.added.length === 0 &&
-         this.differences.moved.length === 0) {
-        this.find_visual_differences();
-      }
     }
     catch(e) {
       if(!(e instanceof LimitError)) {
@@ -714,32 +646,59 @@
   Compare.prototype = {
 
     /**
-     * Parse the trees and map a map of element signatures -> elements in A and B
+     * Parse the list of elements / changes to exclude 
+     */
+    parse_exclusions: function() {
+      var length, i, exclude;
+
+      this.exclude_completely = [];
+      this.exclude_changes = [];
+
+      if(this.opts.exclude instanceof Array) {
+        length = this.opts.exclude.length;
+
+        for(i = 0; i < length; i++) {
+          exclude = this.opts.exclude[i];
+
+          if(typeof exclude.tag === "string" || exclude.attributes instanceof Array) {
+            if(typeof exclude.tag === "string") exclude.tag = exclude.tag.toUpperCase();
+            if(!exclude.hasOwnProperty("method") || exclude.method === "all") {
+              this.exclude_completely.push(exclude);
+            }
+            else {
+              this.exclude_changes.push(exclude);
+            }
+          }
+        }
+      }
+    },
+
+    /**
+     * Parse the trees and create a map of element signatures -> elements in A and B
      */
     _parse_elements: function() {
-      var nextA = goForward(this.a, this.a),
-          nextB = goForward(this.b, this.b),
-          iA = 0, iB = 0;
+      var list, next, i, signature;
 
-      this.elemsA = [];
+      ["a", "b"].forEach(function(tree) {
+        i = 0;
+        list = this["elems" + tree.toUpperCase()] = [];
+        next = goForward({ stop: this[tree], exclude: this.exclude_completely });
 
-      while(nextA) {
-        this.add_to_map(nextA, "a");
-        nextA._index = iA;
-        this.elemsA.push(nextA);
-        nextA = goForward(nextA, this.a);
-        iA ++;
-      }
+        while(next) {
+          signature = elemSignature(next);
+          this.add_to_map(next, tree);
+          list.push(next);
+          next._index = i;
+          next = goForward({
+            last: next,
+            stop: this[tree],
+            exclude: this.exclude_completely
+          });
+          i ++;
+        }
 
-      this.elemsB = [];
-
-      while(nextB) {
-        this.add_to_map(nextB, "b");
-        nextB._index = iB;
-        this.elemsB.push(nextB);
-        nextB = goForward(nextB, this.b);
-        iB ++;
-      }
+        this["total" + tree.toUpperCase()] = i;
+      }, this);
     },
 
     /**
@@ -753,7 +712,6 @@
       while(true) {
         nextA = this.elemsA[indexA];
         nextB = this.elemsB[indexB];
-        log(nextA, nextB);
 
         if(!nextA && !nextB) break;
 
@@ -761,7 +719,6 @@
         sigB = nextB ? nextB._sig : "";
 
         if(sigA == sigB) {
-          log("    Identical");
           indexA ++;
           indexB ++;
         }
@@ -823,16 +780,12 @@
         elem = imbalancesA[i];
         match = this._find_match(elem, imbalancesB);
         if(match) {
-          if(match.type === "attr") {
-            this._difference("reattribute", elem, match.elem);
-          }
 
-          else if(match.type === "tag") {
-            this._difference("retag", elem, match.elem);
-          }
-
-          else if(match.type === "text") {
-            this._difference("text", elem, match.elem);
+          // Report all non-exact matches
+          if(["attr", "tag", "text"].indexOf(match.type) !== -1) {
+            if(this.should_report_change(elem, match)) {
+              this._difference(match.type, elem, match.elem);
+            }
           }
 
           // We're guessing that these elements are the same, equate their signatures
@@ -917,27 +870,83 @@
     },
 
     /**
+     * Decide whether we should report a text/attribute/tag change given the
+     * list of exclusions set
+     */
+    should_report_change: function(elem, match) {
+      var rule = onExclusionList(elem, this.exclude_changes);
+
+      // If we can't find a rule for the element, or it's change isn't excluded
+      if(!rule || !rule.method.hasOwnProperty(match.type)) return true;
+
+      // If we're permitted to change attributes, check that only those ones have
+      if(match.type == "attr") {
+        return !this.attr_changes_match(elem, match.elem, rule.method.attr);
+      }
+    },
+
+    attr_changes_match: function(elemA, elemB, exclude) {
+      var checked = [],
+          length = elemA.attributes.length, attr, i;
+
+      // Check that each A attribute is either equal to B or is excluded
+      for(i = 0; i < length; i++) {
+        attr = elemA.attributes[i].name;
+        checked.push(attr);
+
+        // We've got an attibute change, but it's not on our acceptible list
+        if((elemA.getAttribute(attr) != elemB.getAttribute(attr)) &&
+           (exclude.indexOf(attr) == -1)) {
+          return false;
+        }
+      }
+
+      length = elemB.attributes.length;
+
+      // Check that any added B attributes are excluded
+      for(i = 0; i < length; i++) {
+        attr = elemB.attributes[i].name;
+        if(checked.indexOf(attr) == -1 && exclude.indexOf(attr) == -1) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+
+    /**
      * Find visual changes
      */
-    find_visual_differences: function() {
-      var nextA = goForward(this.a, this.a, true),
-          nextB = goForward(this.b, this.b, true),
-          typeA, typeB, differences, previousReport, types;
+    find_visual_differences: function(nextA, nextB) {
+      var that = this,
+          i = 0, 
+          indexA = 0, indexB = 0,
+          promise, progress,
+          typeA, typeB, differences, previousReport, types, forwardA, forwardB;
 
-      while(nextA !== null && nextB !== null) {
+      if(nextA === undefined) {
+        nextA = goForward({ stop: this.a, all: true, exclude: this.exclude_completely });
+        nextB = goForward({ stop: this.b, all: true, exclude: this.exclude_completely });
+      }
+
+      while(nextA !== null && nextB !== null && i < 25) {
         typeA = nextA && nodeType(nextA);
         typeB = nextB && nodeType(nextB);
         types = [typeA, typeB].sort();
+        forwardA = forwardB = true;
+
+        if(typeA == "element") indexA = nextA._index;
+        if(typeB == "element") indexB = nextB._index;
 
         if(typeA !== typeB) {
 
           // A text node has been added / removed
           if(types[0] == "element" && types[1] == "text") {
             if(typeA == "element") {
-              nextB = goForward(nextB, this.b, true);
+              forwardA = false;
             }
             else {
-              nextA = goForward(nextA, this.a, true);
+              forwardB = false;
             }
 
             /*if(sameIgnoringSpaces(nextA, nextB) &&
@@ -949,17 +958,11 @@
           // We're comparing an element/text to something unknown, skip the unknown
           else if(types.indexOf("element") != -1 || types.indexOf("text") != -1) {
             if(typeA == "element" || typeA == "text") {
-              nextB = goForward(nextB, this.b, true);
+              forwardA = false;
             }
             else {
-              nextA = goForward(nextA, this.a, true);
+              forwardB = false;
             }
-          }
-
-          // Comparing two unknowns, skip both
-          else {
-            nextA = goForward(nextA, this.a, true);
-            nextB = goForward(nextB, this.b, true);
           }
         }
         else {
@@ -969,13 +972,13 @@
             differences = elementStylesDiffer(nextA, nextB);
 
             if(differences !== null) {
-              previousReport = this.already_reported_style_change(nextA, differences);
+              previousReport = that.already_reported_style_change(nextA, differences);
 
               // If we've never seen this difference before, report it
               if(previousReport === null) {
                 nextA._styleAffects = 1;
                 nextA._styleDiff = differences;
-                this._difference("style", nextA, nextB);
+                that._difference("style", nextA, nextB);
               }
 
               // If we have, increment the number of elements affected by it
@@ -991,13 +994,41 @@
           else if(typeA == "text" && nextA.nodeValue !== nextB.nodeValue &&
                   sameIgnoringSpaces(nextA, nextB) &&
                   textVisuallyDifferent(nextA, nextB)) {
-            this._difference("space", nextA, nextB);
+            that._difference("space", nextA, nextB);
           }
-
-          nextA = goForward(nextA, this.a, true);
-          nextB = goForward(nextB, this.b, true);
         }
+
+        if(forwardA) {
+          nextA = goForward({
+            last: nextA,
+            stop: that.a,
+            all: true,
+            exclude: that.exclude_completely
+          });
+        }
+        if(forwardB) {
+          nextB = goForward({
+            last: nextB,
+            stop: that.b,
+            all: true,
+            exclude: that.exclude_completely
+          });
+        }
+        i ++;
       }
+
+      if(nextA || nextB) {
+        progress = Math.round(((indexA / that.totalA) + (indexB / that.totalB)) * 50);
+        progress = Math.min(99, progress);
+      }
+      else {
+        progress = 100;
+      }
+      return {
+        a: nextA,
+        b: nextB,
+        progress: progress
+      };
     },
 
     /**

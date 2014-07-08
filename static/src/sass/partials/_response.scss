@@ -1,10 +1,11 @@
 #iframes {
+  @include clearfix();
   display: none;
+  margin-top: 40px;
 
-  .mode-continuous .with-response & {
-    @include clearfix();
+  .loading &,
+  .with-response & {
     display: block;
-    margin-top: 40px;
   }
 }
 
@@ -15,6 +16,7 @@
   opacity: 0;
   @include single-transition(opacity, 1s, ease);
 
+  .loading &,
   .with-response & {
     opacity: 1;
   }
@@ -23,6 +25,10 @@
 #response-highlights {
   color: $color_copy;
   @include single-transition(color, 0s);
+
+  .loading & {
+    color: lighten($color_copy, 50%);
+  }
 
   .errors & {
     color: $color_one;

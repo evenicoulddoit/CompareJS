@@ -38,13 +38,11 @@
       this.startOverBtn = document.getElementById("do-start-over");
       this.inBtn = document.getElementById("do-compare");
 
-      this.loading = document.getElementById("loading");
-
       // Settings
       this.settingsDom = {
         toggle: document.getElementById("settings-toggle"),
         cacheBust: document.getElementById("settings-cache-bust"),
-        mode: document.getElementById("settings-mode")
+        exclude: document.getElementById("settings-exclude")
       };
 
       this.response = document.getElementById("response");
@@ -54,15 +52,29 @@
     },
 
     process_settings: function() {
+      var exclude = this.settingsDom.exclude.value.trim();
       this.settings.cacheBust = this.settingsDom.cacheBust.value === "yes";
-      this.settings.mode = this.settingsDom.mode.value;
+      if(exclude) {
+        try {
+          this.settings.exclude = JSON.parse(exclude);
+        }
+        catch(e) {
+          if(e instanceof SyntaxError) {
+            this.compare_failed("Failed to parse exclusions JSON block");
+            throw e;
+          }
+        }
+      }
+      else {
+        this.settings.exclude = [];
+      }
     },
 
     process_start_over: function() {
       this.process_comparison(true);
     },
 
-    process_comparison: function(forceRestart) {
+    process_comparison: function(loadFrame) {
       var contentA, contentB;
 
       if(this.inA.value === "" || this.inB.value === "") {
@@ -72,22 +84,23 @@
       this.process_settings();
       this.toggle_settings(false);
       this.inBtn.className = "";
-      this.loading.setAttribute("class", "visible");
+      this.wrapper.setAttribute("class", "loading");
       this.remove_response();
 
-      if(forceRestart === true || this.settings.mode === "single") {
+      if(loadFrame === true) {
+        this.report_progress("Loading pages");
         contentA = this.get_contents(this.frameA, this.inA.value);
         contentB = this.get_contents(this.frameB, this.inB.value);
 
         Promise.all([contentA, contentB]).then(
-          this.do_compare.bind(this),
+          this.do_compare.bind(this, true),
           this.compare_failed.bind(this)
-        );
+        ).catch(this.compare_failed.bind(this));
       }
 
       else {
-        this.do_compare([this.frameA.contentDocument.body,
-                         this.frameB.contentDocument.body]);
+        this.do_compare(false, [this.frameA.contentDocument.body,
+                                this.frameB.contentDocument.body]);
       }
     },
 
@@ -101,31 +114,72 @@
       this.wrapper.removeAttribute("class");
     },
 
-    loading_finished: function() {
-      this.loading.removeAttribute("class");
+    do_compare: function(withTimeout, results) {
+      var that = this,
+          timeout = withTimeout ? 2000 : 1000,
+          compare;
+
+      this.report_progress("Calculating DOM differences");
+
+      setTimeout(function() {
+        try {
+          compare = new Compare({
+            a: results[0],
+            b: results[1],
+            exclude: that.settings.exclude
+          });
+          that.compare = compare;
+        }
+        catch(e) {
+          return that.compare_failed(e);
+        }
+
+        if(compare.stopped_at_max) {
+          that.response_active();
+          return that.differences_true(compare.differences);
+        }
+        else {
+          that._async_visual();
+        }
+      }, timeout);
     },
 
-    do_compare: function(results) {
-      var differences, difference;
+    /**
+     * Perform visual comparisons asynchronously. On slower JS engines we need
+     * to do this to prevent the browser from reporting the page as frozen,
+     * and it also allows us to update the user with the progress
+     * @param  {Object|undefined} resp - Either the previous async response or undefined
+     */
+    _async_visual: function(resp) {
+      var that = this, differences, difference;
 
-      this.compare = new Compare({
-        a: results[0],
-        b: results[1]
-      });
+      if(resp === undefined) resp = { progress: 0 };
 
-      differences = this.compare.differences;
-
-      this.loading_finished();
-      this.response_active();
-
-      for(difference in differences) {
-        if(differences[difference].length !== 0) {
-          this.differences_true(differences);
-          return;
-        }
+      if(resp.progress < 100) {
+        setTimeout(function() {
+          try {
+            resp = that.compare.find_visual_differences(resp.a, resp.b);
+            that.report_progress("Calculating visual differences &mdash; " +
+                                 resp.progress + "% complete");
+            that._async_visual(resp);
+          }
+          catch(e) {
+            return that.compare_failed(e);
+          }
+        }, 0);
       }
+      else {
+        differences = that.compare.differences;
+        that.response_active();
 
-      this.differences_false();
+        for(difference in differences) {
+          if(differences[difference].length !== 0) {
+            return that.differences_true(differences);
+          }
+        }
+
+        return that.differences_false();
+      }
     },
 
     remove_response: function() {
@@ -168,9 +222,16 @@
                                        "visual differences, and we couldn't find any!";
     },
 
+    report_progress: function(progressString) {
+      this.response.setAttribute("class", "loading");
+      this.responseIcon.setAttribute("class", "fa fa-spin fa-spinner");
+      this.responseSummary.innerHTML = progressString;
+      this.responseDetails.innerHTML = "";
+    },
+
     report_difference: function(aspect, report) {
       switch(aspect) {
-        case "retag":
+        case "tag":
           return "Tag change" + 
                  "<code class=\"a\">" + 
                    htmlEntities(report[0]._originalSig) +
@@ -179,7 +240,7 @@
                    htmlEntities(report[1]._originalSig) +
                  "</code>";
 
-        case "reattribute":
+        case "attr":
           return "Attribute change" +
                  "<code class=\"a\">" + 
                    htmlEntities(report[0]._originalSig) +
@@ -250,21 +311,29 @@
     },
 
     compare_failed: function(response) {
-      this.loading_finished();
+      this.wrapper.setAttribute("class", "with-response");
       this.remove_response();
       this.response_active();
+
+      if(typeof response === "object" && response.name === "ReachedLimitError") {
+        return this.differences_true(this.compare.differences);
+      }
+
+      log("Error: ", response);
 
       this.response.setAttribute("class", "errors");
       this.responseIcon.setAttribute("class", "issues fa fa-exclamation-circle");
       this.responseSummary.innerHTML = "Comparison failed";
 
-      if(response.error.name === "SecurityError") {
+      if(typeof response === "string") {
+        this.responseDetails.innerHTML = response;
+      }
+      else if(response.error !== undefined && response.error.name === "SecurityError") {
         this.responseDetails.innerHTML = "Failed to access <em>" + response.url +
                                          "</em> due to cross-origin restrictions";
       }
       else {
-        this.responseDetails.innerHTML = "An unknown error was raised whilst " +
-                                         "trying to load " + response.url;
+        this.responseDetails.innerHTML = "An unknown error was raised";
       }
     },
 
@@ -292,7 +361,7 @@
     },
 
     process_if_enter: function(e) {
-      if(e.keyCode == 13) this.process_comparison();
+      if(e.keyCode == 13) this.process_comparison(true);
     },
 
     toggle_settings: function(explicit) {
@@ -304,20 +373,12 @@
       }
     },
 
-    toggle_mode: function() {
-      document.body.className = "mode-" + this.settingsDom.mode.value;
-      if(this.frameA.src === "" || this.frameB.src === "") {
-        this.inBtn.className = "disabled";
-      }
-    },
-
     events: function() {
       this.inBtn.addEventListener("click", this.process_comparison.bind(this));
       this.startOverBtn.addEventListener("click", this.process_start_over.bind(this));
       this.inA.addEventListener("keypress", this.process_if_enter.bind(this));
       this.inB.addEventListener("keypress", this.process_if_enter.bind(this));
       this.settingsDom.toggle.addEventListener("click", this.toggle_settings.bind(this));
-      this.settingsDom.mode.addEventListener("click", this.toggle_mode.bind(this));
     }
   };
 

@@ -28,23 +28,13 @@ h2 {
 }
 
 iframe {
-  .mode-single & {
-    position: absolute;
-    height: 1000px;
-    width: 1000px;
-    top: -9999px;
-    left: -9999px;
-  }
+  @include box-sizing(border-box);
+  border: 1px solid lighten($color_copy, 50%);
+  width: 48%;
+  height: 300px;
 
-  .mode-continuous & {
-    @include box-sizing(border-box);
-    border: 1px solid lighten($color_copy, 50%);
-    width: 48%;
-    height: 300px;
-
-    &:first-child {
-      margin-right: 4%;
-    }
+  &:first-child {
+    margin-right: 4%;
   }
 }
 
@@ -71,6 +61,7 @@ em {
 }
 
 code {
+  font-family: $font_type_code;
   display: block;
   margin-bottom: 5px;
   padding: 4px 6px;
@@ -78,7 +69,7 @@ code {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: pre-wrap;
-  font-size: 0.8em;
+  font-size: 0.95em;
   line-height: 1.5;
   background-color: lighten($color_light, 0.9);
 

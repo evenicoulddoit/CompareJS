@@ -19,7 +19,7 @@
   opacity: 0;
   @include single-transition(opacity, 0.25s, ease);
 
-  &.visible {
+  .loading & {
     opacity: 1;
   }
 }
@@ -78,18 +78,17 @@ button {
   color: $color_light;
   background-color: $color_one;
 
-  &:hover {
+  &:not(.disabled):hover {
     background-color: lighten($color_one, 2%);
   }
 }
 
 #do-start-over {
-  display: none;
-  background: $color_two;
+  background-color: $color_two;
   color: $color_light;
 
-  .mode-continuous & {
-    display: inline-block;
+  &:not(.disabled):hover {
+    background-color: lighten($color_two, 2%);
   }
 }
 
@@ -125,6 +124,13 @@ button {
   display: none;
   color: lighten($color_copy, 20%);
 
+  .help {
+    color: lighten($color_copy, 60%);
+    &:hover {
+      color: lighten($color_copy, 30%);
+    }
+  }
+
   .open + & {
     display: block;
   }
@@ -143,9 +149,15 @@ button {
     &.not-implemented {
       opacity: 0.5;
     }
+
+    &.full-width {
+      clear: left;
+      width: 100%;
+    }
   }
 
   input[type="text"],
+  textarea,
   select {
     @include box-sizing(border-box);
     display: block;
@@ -153,5 +165,10 @@ button {
     padding: 5px;
     font-size: 1em;
     margin: 3px 0;
+  }
+
+  textarea {
+    height: 150px;
+    font-family: $font_type_code;
   }
 }
