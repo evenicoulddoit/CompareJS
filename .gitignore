@@ -1,2 +1,3 @@
 .sass-cache/*
+static/js/*.report.txt
 Gemfile.lock
