@@ -9,6 +9,7 @@
   var LEFT_WHITESPACE_REGEX  = /^\s+/,
       RIGHT_WHITESPACE_REGEX = /\s+$/,
       MULTI_SPACE_REGEX = /\s{2,}/g,
+      CSS_SELECTOR_REGEX = /,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/g,
       DEBUGGING = false;
 
   if(!DEBUGGING) {
@@ -223,7 +224,7 @@
   function findRulesFor(element) {
     var styles = {},
         sheets = element.ownerDocument.styleSheets,
-        sheet, rules, rule, selectors, selector, specs, spec, i, j, k;
+        sheet, rules, rule, selectors, selector, length, specs, spec, i, j, k;
 
     // Loop through every locally hosted sheet
     for(i = 0; i < sheets.length; i++) {
@@ -236,16 +237,28 @@
         rule = rules[j];
 
         if(rule.type === 1) {
-          selectors = rule.selectorText.split(",");
+          selectors = rule.selectorText.split(CSS_SELECTOR_REGEX).filter(notEmpty);
+
+          length = selectors.length;
           specs = [];
 
           // Loop through all selectors for the rule
-          for(k = 0; k < selectors.length; k++) {
-            selector = selectors[i];
+          for(k = 0; k < length; k++) {
+            selector = selectors[k];
 
             // If the selector matches this element, store its specificity value
-            if(elementMatches(element, selector)) {
-              specs.push(specificity(selector));
+            try {
+              if(elementMatches(element, selector)) {
+                specs.push(specificity(selector));
+                break;
+              }
+            }
+
+            // If the selector is invalid, ignore it
+            catch(e) {
+              if(!(e instanceof SyntaxError)) {
+                throw e;
+              }
             }
           }
 
@@ -260,6 +273,15 @@
     }
 
     return styles;
+  }
+
+  /**
+   * Check if a string contains anything other than whitespace
+   * @param  {String} str
+   * @return {Boolean}
+   */
+  function notEmpty(str) {
+    return str.trim() !== ""; 
   }
 
   /**
@@ -529,11 +551,12 @@
   function elemSignature(elem) {
     var tagName = elem.tagName.toLowerCase(),
         attrStr = getAttrStr(elem),
-        textStr = getTextStr(elem);
+        textStr = getTextStr(elem),
+        tagSig = "<" + tagName + attrStr + ">";
 
-    elem._sig = elem._originalSig = "<" + tagName + attrStr + ">" +
-                                    textStr + "</" + tagName + ">";
+    elem._sig = elem._originalSig = tagSig + textStr + "</" + tagName + ">";
 
+    elem._tagSig = tagSig;
     elem._attrStr = attrStr;
     elem._textStr = textStr;
 
@@ -571,6 +594,21 @@
     }
 
     return nodes.join(" ").replace(MULTI_SPACE_REGEX, " ").trim();
+  }
+
+  function removeMatchGroups(str, re) {
+    var exec = re.exec(str),
+        length, i;
+
+    if(exec === null) return str;
+    exec.shift();
+
+    length = exec.length;
+    for(i = 0; i < length; i++) {
+      str = str.replace(exec[i], "");
+    }
+
+    return str;
   }
 
   /**
@@ -649,7 +687,7 @@
      * Parse the list of elements / changes to exclude 
      */
     parse_exclusions: function() {
-      var length, i, exclude;
+      var length, i, exclude, attrs, attr;
 
       this.exclude_completely = [];
       this.exclude_changes = [];
@@ -657,6 +695,7 @@
       if(this.opts.exclude instanceof Array) {
         length = this.opts.exclude.length;
 
+        exclusions:
         for(i = 0; i < length; i++) {
           exclude = this.opts.exclude[i];
 
@@ -666,6 +705,19 @@
               this.exclude_completely.push(exclude);
             }
             else {
+              attrs = exclude.method.attr;
+              if(typeof attrs == "object") {
+                for(attr in attrs) {
+                  if(attrs[attr] !== "*") {
+                    try {
+                      attrs[attr] = new RegExp(attrs[attr], "i");
+                    }
+                    catch(e) {
+                      throw new SyntaxError("Failed to parse exception RegExp: " + attrs[attr]);
+                    }
+                  }
+                }
+              }
               this.exclude_changes.push(exclude);
             }
           }
@@ -887,17 +939,30 @@
 
     attr_changes_match: function(elemA, elemB, exclude) {
       var checked = [],
-          length = elemA.attributes.length, attr, i;
+          length = elemA.attributes.length, attr, i, attrA, attrB, exclusion;
 
       // Check that each A attribute is either equal to B or is excluded
       for(i = 0; i < length; i++) {
         attr = elemA.attributes[i].name;
+        attrA = elemA.getAttribute(attr);
+        attrB = elemB.getAttribute(attr);
         checked.push(attr);
 
-        // We've got an attibute change, but it's not on our acceptible list
-        if((elemA.getAttribute(attr) != elemB.getAttribute(attr)) &&
-           (exclude.indexOf(attr) == -1)) {
-          return false;
+        // We've got an attibute change
+        if(attrA !== attrB) {
+          exclusion = exclude[attr];
+
+          // It's not on our exclusion list
+          if(exclusion === undefined) {
+            return false;
+          }
+
+          // It's on our exclusion list, but the exclusion is a regex, and
+          // when we remove the matched groups, they're still not equal
+          else if(exclusion instanceof RegExp &&
+                  removeMatchGroups(attrA, exclusion) !== removeMatchGroups(attrB, exclusion)) {
+            return false;
+          }
         }
       }
 
@@ -1045,7 +1110,7 @@
 
       for(i = 0; i < count; i ++) {
         comparison = styleDifferences[i][0];
-        if(elem._sig === comparison._sig &&
+        if(elem._tagSig === comparison._tagSig &&
            JSON.stringify(differences) === JSON.stringify(comparison._styleDiff)) {
           return comparison;
         }

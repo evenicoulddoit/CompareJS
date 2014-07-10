@@ -9,41 +9,45 @@
           type="text/css" rel="stylesheet">
   </head>
   <body>
-    <div id="wrapper">
-      <h1>Compare.js</h1>
-      <div id="pages">
-        <div class="container">
-          <input id="page-a" class="pages-input" type="text" placeholder="a.html" />
+    <div id="wrapper" class="stage-start">
+      <div id="section-top">
+        <h1>Compare.js</h1>
+        <div id="pages">
+          <div class="container">
+            <input id="page-a" class="pages-input" type="text"
+                   placeholder="a.html" spellcheck="false" />
+          </div>
+          <div id="loading">
+            <i class="fa fa-spin fa-spinner"></i>
+          </div>
+          <div class="container">
+            <input id="page-b" class="pages-input" type="text"
+                   placeholder="b.html" spellcheck="false" />
+          </div>
         </div>
-        <div id="loading">
-          <i class="fa fa-spin fa-spinner"></i>
-        </div>
-        <div class="container">
-          <input id="page-b" class="pages-input" type="text" placeholder="b.html" />
-        </div>
-      </div>
-      <button id="do-compare" type="button" class="disabled">Compare</button>
-      <button id="do-start-over" type="button">
-        <i class="fa fa-undo"></i>
-      </button>
-      <button id="settings-toggle"><i class="fa fa-cog"></i></button>
-      <div id="settings">
-        <div class="option">
-          <label>
-            Cache-bust
-            <i class="help fa fa-question-circle"></i>
-          </label>
-          <select id="settings-cache-bust">
-            <option value="yes" selected="selected">Yes</option>
-            <option value="no" >No</option>
-          </select>
-        </div>
-        <div class="option full-width">
-          <label>
-            Exclusions
-            <i class="help fa fa-question-circle"></i>
-          </label>
-          <textarea id="settings-exclude"></textarea>
+        <button id="do-compare" type="button" class="disabled">Compare</button>
+        <button id="do-start-over" type="button">
+          <i class="fa fa-undo"></i>
+        </button>
+        <button id="settings-toggle"><i class="fa fa-cog"></i></button>
+        <div id="settings">
+          <div class="option">
+            <label>
+              Cache-bust
+              <i class="help fa fa-question-circle"></i>
+            </label>
+            <select id="settings-cache-bust">
+              <option value="yes" selected="selected">Yes</option>
+              <option value="no" >No</option>
+            </select>
+          </div>
+          <div class="option full-width">
+            <label>
+              Exclusions
+              <i class="help fa fa-question-circle"></i>
+            </label>
+            <textarea id="settings-exclude"></textarea>
+          </div>
         </div>
       </div>
       <div id="iframes"></div>
