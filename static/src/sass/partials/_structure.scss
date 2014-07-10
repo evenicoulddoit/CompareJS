@@ -1,10 +1,9 @@
 #wrapper {
   width: 80vw;
-  margin: 20vh auto 0;
+  margin: 2vh auto 0;
   @include single-transition(margin-top, 1s, ease);
 
-  &.loading,
-  &.with-response {
-    margin-top:2vh;
+  &.stage-start {
+    margin-top: 20vh;
   }
 }

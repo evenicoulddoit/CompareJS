@@ -1,3 +1,16 @@
+#section-top {
+  @include single-transition(opacity, 0.1s, ease);
+  opacity: 0.85;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  .stage-start & {
+    opacity: 1;
+  }
+}
+
 #pages {
   @include clearfix;
 
