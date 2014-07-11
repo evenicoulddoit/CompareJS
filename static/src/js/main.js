@@ -1,4 +1,4 @@
-(function(Promise, Compare, log) { "use strict";
+(function(Promise, Compare, localStorage, log) { "use strict";
 
   try {
     document.domain = "compare.js";
@@ -28,6 +28,7 @@
       this.parse_dom();
       this.settings = {};
       this.events();
+      this.load_input_state();
     },
 
     parse_dom: function() {
@@ -37,6 +38,7 @@
       this.inB = document.getElementById("page-b");
       this.startOverBtn = document.getElementById("do-start-over");
       this.inBtn = document.getElementById("do-compare");
+
 
       // Settings
       this.settingsDom = {
@@ -373,12 +375,30 @@
       }
     },
 
+    load_input_state: function() {
+      var val;
+
+      [this.inA, this.inB, this.settingsDom.exclude].forEach(function(input) {
+        val = localStorage.getItem("saved-input" + input.id);
+        if(val !== null) {
+          input.value = val;
+        }
+      }, this);
+    },
+
+    save_input_state: function() {
+      [this.inA, this.inB, this.settingsDom.exclude].forEach(function(input) {
+        localStorage.setItem("saved-input" + input.id, input.value);
+      }, this);
+    },
+
     events: function() {
       this.inBtn.addEventListener("click", this.process_comparison.bind(this));
       this.startOverBtn.addEventListener("click", this.process_start_over.bind(this));
       this.inA.addEventListener("keypress", this.process_if_enter.bind(this));
       this.inB.addEventListener("keypress", this.process_if_enter.bind(this));
       this.settingsDom.toggle.addEventListener("click", this.toggle_settings.bind(this));
+      setInterval(this.save_input_state.bind(this), 1000);
     }
   };
 
@@ -386,5 +406,6 @@
 
 })(window.Promise,
    window.Compare,
+   window.localStorage,
    window.console.log.bind(window.console)
 );
