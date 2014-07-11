@@ -4,13 +4,14 @@
  * Compares two different DOM trees, for element & differences
  * ===========================================================================*/
 
-(function(window, specificity, log) { "use strict";
+define(["specificity"], function(specificity) { "use strict";
 
   var LEFT_WHITESPACE_REGEX  = /^\s+/,
       RIGHT_WHITESPACE_REGEX = /\s+$/,
       MULTI_SPACE_REGEX = /\s{2,}/g,
       CSS_SELECTOR_REGEX = /,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/g,
-      DEBUGGING = false;
+      DEBUGGING = false,
+      log = window.console.log.bind(window.console);
 
   if(!DEBUGGING) {
     log = function() {};
@@ -44,7 +45,7 @@
    */
   function textVisuallyDifferent(nodeA, nodeB) {
     var compareNode = nodeA || nodeB,
-        nodeWindow = compareNode.ownerDocument.parent
+        nodeWindow = compareNode.ownerDocument.parent,
         parentStyle = window.getComputedStyle(compareNode.parentNode),
         parentBlock = parentStyle.getPropertyValue("display") === "block",
         parentFloat = parentStyle.getPropertyValue("float") !== "none",
@@ -249,7 +250,7 @@
             // If the selector matches this element, store its specificity value
             try {
               if(elementMatches(element, selector)) {
-                specs.push(specificity(selector));
+                specs.push(specificity.calculate(selector));
                 break;
               }
             }
@@ -1155,6 +1156,6 @@
     }
   };
 
-  window.Compare = Compare;
+  return Compare;
 
-})(window, window.specificity, window.console.log.bind(window.console));
+});

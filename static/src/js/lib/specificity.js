@@ -8,7 +8,7 @@
  *  - specificity: e.g. 0,1,0,0
  *  - parts: array with details about each part of the selector that counts towards the specificity
  */
-(function() { 'use strict';
+define([], function() { 'use strict';
   var calculate;
 
   // Calculate the specificity for a selector by dividing it into simple selectors and counting them
@@ -111,5 +111,7 @@
     return parseInt([typeCount.a, typeCount.b, typeCount.c].join(''), 10);
   };
 
-  window.specificity = calculate;
-})(window);
+  return {
+    calculate: calculate
+  };
+});
