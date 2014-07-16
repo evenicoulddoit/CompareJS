@@ -4,637 +4,21 @@
  * Compares two different DOM trees, for element & differences
  * ===========================================================================*/
 
-define(["specificity"], function(specificity) { "use strict";
+define(["types",
+        "regexp",
+        "dom/common",
+        "dom/visual",
+        "dom/traversal",
+        "exceptions"],
 
-  var LEFT_WHITESPACE_REGEX  = /^\s+/,
-      RIGHT_WHITESPACE_REGEX = /\s+$/,
-      MULTI_SPACE_REGEX = /\s{2,}/g,
-      CSS_SELECTOR_REGEX = /,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/g,
-      DEBUGGING = false,
+function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
+
+  var DEBUGGING = false,
       log = window.console.log.bind(window.console);
 
   if(!DEBUGGING) {
     log = function() {};
   }
-
-  /**
-   * Check whether a given node is an element and has a block context
-   * @param  {Node} node
-   * @return {Boolean}
-   */
-  function hasBlockContext(node) {
-    var displays = ["inline", "inline-block"], style;
-
-    if(!(node instanceof window.Element)) return false;
-
-    style = window.getComputedStyle(node);
-    return (style.getPropertyValue("float") != "none" ||
-            displays.indexOf(style.getPropertyValue("display")) == -1);
-  }
-
-  function sameIgnoringSpaces(nodeA, nodeB) {
-    return (nodeA.nodeValue.replace(MULTI_SPACE_REGEX, "") ===
-            nodeB.nodeValue.replace(MULTI_SPACE_REGEX, ""));
-  }
-
-  /**
-   * Given at least one text node, check if space changes matter
-   * @param  {Text} [nodeA]
-   * @param  {Text} [nodeB]
-   * @return {Boolean}
-   */
-  function textVisuallyDifferent(nodeA, nodeB) {
-    var compareNode = nodeA || nodeB,
-        nodeWindow = compareNode.ownerDocument.parent,
-        parentStyle = window.getComputedStyle(compareNode.parentNode),
-        parentBlock = parentStyle.getPropertyValue("display") === "block",
-        parentFloat = parentStyle.getPropertyValue("float") !== "none",
-        parentSpaceMatters = parentBlock || parentFloat,
-        textA = nodeA !== null ? nodeA.nodeValue : "",
-        textB = nodeB !== null ? nodeB.nodeValue : "",
-        back, forward;
-
-    return false;
-        /*if()
-
-        while(back !== this.a) {
-          back = goBack(nodeA, this.a, true);
-          if(back )
-
-        }
-
-        while(forward !== this.a) {
-
-        }
-
-      // Direct block element
-      if(!node.previousSibling && !node.nextSibling && hasBlockContext(node.parentNode)) {
-        return false;
-      }
-
-      // If important in any direction, 
-      if(differences.indexOf("left") != -1 && spaceImportant(node, goBack)) {
-        return true;
-      }
-      if(differences.indexOf("right") != -1 && spaceImportant(node, goForward)) {
-        return true;
-      }
-
-      return false;
-      */
-  }
-
-  function _startsWith(a) {
-    return function(b) {
-      return b.indexOf(a) === 0;
-    };
-  }
-
-  function startsWith(a, b) {
-    return a.indexOf(b) === 0;
-  }
-
-  /**
-   * Compare two elements and determine whether they are stylistically different
-   * We first check their computed style, to get a concrete answer. If we find
-   * any, we then try to calculate why they've changed, by finding all CSS rule
-   * changes between the two elements. Finally we collect all style changes
-   * which have had an affect on the computed values, and report them. This
-   * allows us to filter out all erroneous information, such as a parent's
-   * width changing a child's, and reporting on both.
-   * @param  {Element} elemA
-   * @param  {Element} elemB
-   * @return {Boolean} Whether these two elements styles differ.
-   */
-  function elementStylesDiffer(elemA, elemB) {
-    var computedDifferences = styleComputedDifferences(elemA, elemB),
-        sharedDifferences = { a: {}, b: {} },
-        sharedCount = 0,
-        ruleDifferences, difference;
-
-    if(computedDifferences.length) {
-      ruleDifferences = styleRuleDifference(elemA, elemB);
-
-      for(difference in ruleDifferences) {
-        if(computedDifferences.filter(_startsWith(difference)).length > 0) {
-          if(ruleDifferences[difference][0] !== undefined) {
-            sharedDifferences.a[difference] = ruleDifferences[difference][0];
-          }
-          if(ruleDifferences[difference][1] !== undefined) {
-            sharedDifferences.b[difference] = ruleDifferences[difference][1];
-          }
-          sharedCount ++;
-        }
-      }
-    }
-
-    shorthandMarginPadding(sharedDifferences);
-
-    //console.log(sharedDifferences);
-    //shorthandStyleDifferences(sharedDifferences);
-    //   
-
-    return sharedCount !== 0 ? sharedDifferences: null;
-  }
-
-  /**
-   * Find the computed style differences between two elements. Ignore the domain
-   * such that background images etc. don't return false-positives
-   * @param  {Element} elemA 
-   * @param  {Element} elemB
-   * @return {Array} - An array of property names
-   */
-  function styleComputedDifferences(elemA, elemB) {
-    var stylesA = window.getComputedStyle(elemA),
-        stylesB = window.getComputedStyle(elemB),
-        domainA = elemA.ownerDocument.URL.split("/").slice(0, 3).join("/"),
-        domainB = elemB.ownerDocument.URL.split("/").slice(0, 3).join("/"),
-        differences = [],
-        count = stylesA.length, rule, i;
-
-    // Go through all of A and check equal
-    for(i = 0; i < count; i ++) {
-      rule = stylesA[i];
-
-      if(stylesA.getPropertyValue(rule).replace(domainA, "") != 
-         stylesB.getPropertyValue(rule).replace(domainB, "")) {
-        differences.push(rule);
-      }
-    }
-
-    return differences;
-  }
-
-  /**
-   * Firefox prefixes -value onto some properties for an unknown reason.
-   * Wherever we find this, remove it, so that the output is nice
-   * @param  {string} styleName
-   * @return {string}
-   */
-  function uniformName(styleName) {
-    var pos = styleName.indexOf("-value");
-    if(pos !== -1 && pos === styleName.length - 6) {
-      styleName = styleName.substring(0, pos);
-    }
-    return styleName;
-  }
-
-  /**
-   * Find the stylesheet rule differences between elements
-   * @param  {Element} elemA
-   * @param  {Element} elemB
-   * @return {Object} - An object of property name -> property value pairs
-   */
-  function styleRuleDifference(elemA, elemB) {
-    var stylesA = findRulesFor(elemA),
-        stylesB = findRulesFor(elemB),
-        differences = {},
-        checked = [],
-        styleName, styleB;
-
-    for(styleName in stylesA) {
-      styleB = (stylesB[styleName] || {}).value;
-      if(stylesA[styleName].value != styleB) {
-        differences[styleName] = [stylesA[styleName].value, styleB];
-      }
-      checked.push(styleName);
-    }
-
-    for(styleName in stylesB) {
-      if(checked.indexOf(styleName) == -1) {
-        differences[styleName] = [undefined, stylesB[styleName].value];
-      }
-    }
-
-    return differences;
-  }
-
-  function elementMatches(element, selector) {
-    var i, match,
-        matches = ["matches", "webkitMatchesSelector", 
-                   "mozMatchesSelector", "msMatchesSelector"];
-
-    for(i = 0; i < matches.length; i++) {
-      match = matches[i];
-      if(match in element) {
-        return element[match](selector);
-      }
-    }
-  }
-
-  function findRulesFor(element) {
-    var styles = {},
-        sheets = element.ownerDocument.styleSheets,
-        sheet, rules, rule, selectors, selector, length, specs, spec, i, j, k;
-
-    // Loop through every locally hosted sheet
-    for(i = 0; i < sheets.length; i++) {
-      sheet = sheets[i];
-      rules = sheet.cssRules;
-      if(!rules) continue;
-
-      // Loop through all the rules within the sheet
-      for(j = 0; j < rules.length; j++) {
-        rule = rules[j];
-
-        if(rule.type === 1) {
-          selectors = rule.selectorText.split(CSS_SELECTOR_REGEX).filter(notEmpty);
-
-          length = selectors.length;
-          specs = [];
-
-          // Loop through all selectors for the rule
-          for(k = 0; k < length; k++) {
-            selector = selectors[k];
-
-            // If the selector matches this element, store its specificity value
-            try {
-              if(elementMatches(element, selector)) {
-                specs.push(specificity.calculate(selector));
-                break;
-              }
-            }
-
-            // If the selector is invalid, ignore it
-            catch(e) {
-              if(!(e instanceof SyntaxError)) {
-                throw e;
-              }
-            }
-          }
-
-          // If anything matched, pull off the most specific and add all
-          // specificity-beating rules
-          if(specs.length) {
-            spec = Math.max.apply(Math, specs);
-            specificityAdd(spec, styles, rule.style);
-          }
-        }
-      }
-    }
-
-    return styles;
-  }
-
-  /**
-   * Check if a string contains anything other than whitespace
-   * @param  {String} str
-   * @return {Boolean}
-   */
-  function notEmpty(str) {
-    return str.trim() !== ""; 
-  }
-
-  /**
-   * Edit an object of rules mappings in-place, replacing items where the
-   * specificity of the selector is at least as high as the existing
-   * @param  {Number} spec - The specificty value for these new rules
-   * @param  {Object} existingStyles - The existing rules
-   * @param  {Object} newStyles - The new rules to conditionally add
-   */
-  function specificityAdd(spec, existingStyles, newStyles) {
-    var length = newStyles.length,
-        styleOrig, styleName, i;
-
-    for(i = 0; i < length; i++) {
-      styleOrig = newStyles[i];
-      styleName = uniformName(styleOrig);
-
-      if(!(styleName in existingStyles && spec < existingStyles[styleName].specificity)) {
-        existingStyles[styleName] = {
-          specificity: spec,
-          value: newStyles.getPropertyValue(styleOrig)
-        };
-      }
-    }
-  }
-
-  function equalValues(obj, keys) {
-    var length = keys.length,
-        value, i;
-
-    for(i = 0; i < length; i++) {
-      if(i === 0) value = obj[keys[i]];
-      else if(obj[keys[i]] !== value) return false;
-    }
-
-    return true;
-  }
-
-  function removeKeys(obj, keys) {
-    var length = keys.length, i;
-    for(i = 0; i < length; i++) {
-      delete obj[keys[i]];
-    }
-  }
-
-  function shorthandMarginPadding(differences) {
-    var diffTree, removeOriginals, keys;
-
-    ["a", "b"].forEach(function(tree) {
-      ["margin", "padding"].forEach(function(rule) {
-        diffTree = differences[tree];
-        removeOriginals = false;
-        keys = Object.keys(diffTree).filter(function(key) {
-          return key.indexOf(rule + "-") === 0;
-        });
-
-        // We can only shorthand if all values are set
-        if(keys.length == 4) {
-
-          // All values identical
-          if(equalValues(diffTree, keys)) {
-            removeOriginals = true;
-            diffTree[rule] = diffTree[keys[0]];
-          }
-
-          // Equal left and values, required at least for a shorthand
-          else if(equalValues(diffTree, [rule + "-left", rule + "-right"])) {
-            removeOriginals = true;
-
-            // Equal x's and equal y's
-            if(equalValues(diffTree, [rule + "-top", rule + "-bottom"])) {
-              diffTree[rule] = diffTree[rule + "-top"] + " " +
-                               diffTree[rule + "-left"];
-            }
-
-            // Equal x's different top and bottom
-            else {
-              diffTree[rule] = diffTree[rule + "-top"] + " " +
-                               diffTree[rule + "-left"] + " " +
-                               diffTree[rule + "-bottom"];
-
-            }
-          }
-
-          if(removeOriginals) {
-            removeKeys(diffTree, [
-              rule + "-top", rule + "-right", rule + "-bottom", rule + "-left"
-            ]);
-          }
-        }
-      });
-    });
-  }
-
-  function spaceImportant(node, nextFn) {
-    var previous = node;
-    while(true) {
-      previous = nextFn(previous, null, true);
-
-      // Before reaching a block-level element, we've come across a
-      // space-less text node
-      if((previous instanceof window.Text)) {
-        if(previous.nodeValue.match(LEFT_WHITESPACE_REGEX) === null) {
-          return true;
-        }
-        else {
-          break;
-        }
-      }
-
-      // Reached a block-level element, spaces won't matter
-      if(hasBlockContext(previous)) {
-        break;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * 
-   */
-  function goBack(last, stop, any) {
-    var back;
-
-    if(!last) return goBack(stop, stop, any);
-
-    // Down
-    back = getLastChild(last, any);
-    if(back) return back;
-
-    // Along
-    back = previousElement(last, any);
-    if(back) return back;
-
-    // Up
-    while(last != stop) {
-      last = last.parentNode;
-      if(last == stop) return null;
-
-      back = previousElement(last, any);
-      if(back) return back;
-    }
-  }
-
-  /**
-   * Get the next node given the previous. Stop if we bubble back up to the initial parent.
-   * We first look down, then along, then up.
-   * @param {Node} [last] - If undefined, returns stop's firstChild
-   * @param {Node} stop
-   * @returns {Node|null}
-   * @memberof Compare
-   */
-  function goForward(opts) {
-    var forward;
-
-    if(!opts.last) {
-      opts.last = opts.stop;
-      return goForward(opts);
-    }
-
-    forward = _goForward(opts);
-    if(forward !== null && opts.exclude && onExclusionList(forward, opts.exclude)) {
-      opts.no_down = true;
-      opts.last = forward;
-      return goForward(opts);
-    }
-
-    return forward;
-  }
-
-  function _goForward(opts) {
-    var last = opts.last, forward;
-
-    // Down
-    if(!opts.no_down) {
-      forward = getFirstChild(last, opts.all);
-      if(forward) return forward;
-    }
-
-    opts.no_down = false;
-
-    // Along
-    forward = nextElement(last, opts.all);
-    if(forward) return forward;
-
-    // Up
-    while(last != opts.stop) {
-      last = last.parentNode;
-      if(last == opts.stop) return null;
-
-      forward = nextElement(last, opts.all);
-      if(forward) return forward;
-    }
-  }
-
-  function previousElement(from, any) {
-    if(any) return from.previousSibling;
-    return from.previousElementSibling;
-  }
-
-  function nextElement(from, any) {
-    if(any) return from.nextSibling;
-    return from.nextElementSibling;
-  }
-
-  function getFirstChild(from, any) {
-    if(any && from.childNodes.length) {
-      return from.childNodes[0];
-    }
-    else if(!any && from.children.length) {
-      return from.children[0];
-    }
-    return null;
-  }
-
-  function getLastChild(from, any) {
-    if(any && from.childNodes.length) {
-      return from.childNodes[from.childNodes.length - 1];
-    }
-    else if(!any && from.children.length) {
-      return from.children[from.children.length-1];
-    }
-    return null;
-  }
-
-  /**
-   * Return whether an element matches any of the provided list of exclusions
-   * @param  {Element} elem
-   * @param  {Array} list - The list of exclusion objecta
-   * @return {Object|Boolean} - Either the exclusion rule or false
-   */
-  function onExclusionList(elem, list) {
-    var exclude_length = list.length,
-        exclude, i, attr;
-
-    outer:
-    for(i = 0; i < exclude_length; i++) {
-      exclude = list[i];
-
-      if(exclude.hasOwnProperty("tag") && exclude.tag !== elem.tagName) {
-        continue;
-      }
-      if(exclude.hasOwnProperty("attributes")) {
-        for(attr in exclude.attributes) {
-          if(exclude.attributes[attr] !== elem.getAttribute(attr)) {
-            continue outer;
-          }
-        }
-      }
-      return exclude;
-    }
-    return false;
-  }
-
-  function nodeType(node) {
-    return {
-      1: "element",
-      3: "text"
-    }[node.nodeType.toString()];
-  }
-
-  /**
-   * With a given element, produce a string descibing it's type and attribute
-   * @param  {Element} elem
-   * @return {string}
-   */
-  function elemSignature(elem) {
-    var tagName = elem.tagName.toLowerCase(),
-        attrStr = getAttrStr(elem),
-        textStr = getTextStr(elem),
-        tagSig = "<" + tagName + attrStr + ">";
-
-    elem._sig = elem._originalSig = tagSig + textStr + "</" + tagName + ">";
-
-    elem._tagSig = tagSig;
-    elem._attrStr = attrStr;
-    elem._textStr = textStr;
-
-    return elem._sig;
-  }
-
-  function getAttrStr(elem) {
-    var length = elem.attributes.length,
-        attrKeys = [],
-        attrStr = "", attr, i;
-
-    for(i = 0; i < length; i++) {
-      attrKeys.push(elem.attributes[i].name);
-    }
-
-    attrKeys.sort();
-
-    for(i = 0; i < length; i++) {
-      attr = attrKeys[i];
-      attrStr += " " + attr + "=\"" + elem.attributes.getNamedItem(attr).value + "\"";
-    }
-
-    return attrStr;
-  }
-
-  function getTextStr(elem) {
-    var length = elem.childNodes.length,
-        nodes = [], node, i;
-
-    for(i = 0; i < length; i++) {
-      node = elem.childNodes[i];
-      if(nodeType(node) == "text") {
-        nodes.push(node.nodeValue);
-      }
-    }
-
-    return nodes.join(" ").replace(MULTI_SPACE_REGEX, " ").trim();
-  }
-
-  function removeMatchGroups(str, re) {
-    var exec = re.exec(str),
-        length, i;
-
-    if(exec === null) return str;
-    exec.shift();
-
-    length = exec.length;
-    for(i = 0; i < length; i++) {
-      str = str.replace(exec[i], "");
-    }
-
-    return str;
-  }
-
-  /**
-   * Define a custom error, to throw when we reach our difference limit
-   * @param {string} message
-   */
-  function LimitError(message) {
-    this.name = "ReachedLimitError";
-    this.message = message;
-    this.stack = (new Error()).stack;
-  }
-
-  LimitError.prototype = Object.create(Error.prototype);
-
-  /**
-   * @constructor
-   */
-  function MapList() {
-    this.a = [];
-    this.b = [];
-  }
-
-  MapList.prototype.push = function(to, value) {
-    this[to].push(value);
-  };
 
   /**
    * @constructor
@@ -676,7 +60,7 @@ define(["specificity"], function(specificity) { "use strict";
       this._find_movements();
     }
     catch(e) {
-      if(!(e instanceof LimitError)) {
+      if(!(e instanceof exceptions.LimitError)) {
         throw e;
       }
     }
@@ -735,14 +119,17 @@ define(["specificity"], function(specificity) { "use strict";
       ["a", "b"].forEach(function(tree) {
         i = 0;
         list = this["elems" + tree.toUpperCase()] = [];
-        next = goForward({ stop: this[tree], exclude: this.exclude_completely });
+        next = traverse.forward({
+          stop: this[tree],
+          exclude: this.exclude_completely
+        });
 
         while(next) {
-          signature = elemSignature(next);
+          signature = DOM.signature(next);
           this.add_to_map(next, tree);
           list.push(next);
           next._index = i;
-          next = goForward({
+          next = traverse.forward({
             last: next,
             stop: this[tree],
             exclude: this.exclude_completely
@@ -804,8 +191,10 @@ define(["specificity"], function(specificity) { "use strict";
      * Add an element to the element map
      */
     add_to_map: function(elem, source) {
-      var signature = elemSignature(elem);
-      if(!(signature in this.signatureMap)) this.signatureMap[signature] = new MapList();
+      var signature = DOM.signature(elem);
+      if(!(signature in this.signatureMap)) {
+        this.signatureMap[signature] = new types.MapList();
+      }
       this.signatureMap[signature].push(source, elem);
     },
 
@@ -927,7 +316,7 @@ define(["specificity"], function(specificity) { "use strict";
      * list of exclusions set
      */
     should_report_change: function(elem, match) {
-      var rule = onExclusionList(elem, this.exclude_changes);
+      var rule = traverse.onExclusionList(elem, this.exclude_changes);
 
       // If we can't find a rule for the element, or it's change isn't excluded
       if(!rule || !rule.method.hasOwnProperty(match.type)) return true;
@@ -940,7 +329,8 @@ define(["specificity"], function(specificity) { "use strict";
 
     attr_changes_match: function(elemA, elemB, exclude) {
       var checked = [],
-          length = elemA.attributes.length, attr, i, attrA, attrB, exclusion;
+          length = elemA.attributes.length,
+          attr, i, attrA, attrB, exclusion, strippedA, strippedB;
 
       // Check that each A attribute is either equal to B or is excluded
       for(i = 0; i < length; i++) {
@@ -960,9 +350,13 @@ define(["specificity"], function(specificity) { "use strict";
 
           // It's on our exclusion list, but the exclusion is a regex, and
           // when we remove the matched groups, they're still not equal
-          else if(exclusion instanceof RegExp &&
-                  removeMatchGroups(attrA, exclusion) !== removeMatchGroups(attrB, exclusion)) {
-            return false;
+          else if(exclusion instanceof RegExp) {
+            strippedA = regexp.removeMatchGroups(attrA, exclusion);
+            strippedB = regexp.removeMatchGroups(attrB, exclusion);
+
+            if(strippedA !== strippedB) {
+              return false;
+            }
           }
         }
       }
@@ -987,17 +381,25 @@ define(["specificity"], function(specificity) { "use strict";
       var that = this,
           i = 0, 
           indexA = 0, indexB = 0,
-          promise, progress,
+          progress,
           typeA, typeB, differences, previousReport, types, forwardA, forwardB;
 
       if(nextA === undefined) {
-        nextA = goForward({ stop: this.a, all: true, exclude: this.exclude_completely });
-        nextB = goForward({ stop: this.b, all: true, exclude: this.exclude_completely });
+        nextA = traverse.forward({
+          stop: this.a,
+          all: true,
+          exclude: this.exclude_completely
+        });
+        nextB = traverse.forward({
+          stop: this.b,
+          all: true,
+          exclude: this.exclude_completely
+        });
       }
 
       while(nextA !== null && nextB !== null && i < 25) {
-        typeA = nextA && nodeType(nextA);
-        typeB = nextB && nodeType(nextB);
+        typeA = nextA && DOM.nodeType(nextA);
+        typeB = nextB && DOM.nodeType(nextB);
         types = [typeA, typeB].sort();
         forwardA = forwardB = true;
 
@@ -1035,7 +437,7 @@ define(["specificity"], function(specificity) { "use strict";
 
           // Compare visual differences
           if(typeA == "element") {
-            differences = elementStylesDiffer(nextA, nextB);
+            differences = visual.elemsDiffer(nextA, nextB);
 
             if(differences !== null) {
               previousReport = that.already_reported_style_change(nextA, differences);
@@ -1058,14 +460,14 @@ define(["specificity"], function(specificity) { "use strict";
           // If the nodes are not identical, but when you factor out space
           // changes they are, we check if those space changes matter
           else if(typeA == "text" && nextA.nodeValue !== nextB.nodeValue &&
-                  sameIgnoringSpaces(nextA, nextB) &&
-                  textVisuallyDifferent(nextA, nextB)) {
+                  DOM.sameIgnoringSpaces(nextA, nextB) &&
+                  visual.textsDiffer(nextA, nextB)) {
             that._difference("space", nextA, nextB);
           }
         }
 
         if(forwardA) {
-          nextA = goForward({
+          nextA = traverse.forward({
             last: nextA,
             stop: that.a,
             all: true,
@@ -1073,7 +475,7 @@ define(["specificity"], function(specificity) { "use strict";
           });
         }
         if(forwardB) {
-          nextB = goForward({
+          nextB = traverse.forward({
             last: nextB,
             stop: that.b,
             all: true,
@@ -1121,25 +523,6 @@ define(["specificity"], function(specificity) { "use strict";
     },
 
     /**
-     * Calculate whether space to the left and right differs between textNodes
-     * @param {string} valueA - The text of node A
-     * @param {string} valueB - The text of node B
-     * @returns {Boolean} Whether both left and right are identical
-     */
-    _different_spaces: function(valueA, valueB) {
-      var aLeft  = valueA.match(LEFT_WHITESPACE_REGEX)  === null,
-          bLeft  = valueB.match(LEFT_WHITESPACE_REGEX)  === null,
-          aRight = valueA.match(RIGHT_WHITESPACE_REGEX) === null,
-          bRight = valueB.match(RIGHT_WHITESPACE_REGEX) === null,
-          differences = [];
-
-      if(aLeft != bLeft) differences.push("left");
-      if(aRight != bRight) differences.push("right");
-
-      return differences;
-    },
-
-    /**
      * Log an error
      * @param {string} type - The type of error reported
      * @param {Node} nodeA
@@ -1151,7 +534,7 @@ define(["specificity"], function(specificity) { "use strict";
 
       if(this.differenceCount >= this.MAX_DIFFERENCES) {
         this.stopped_at_max = true;
-        throw new LimitError("Max number of differences reached");
+        throw new exceptions.LimitError("Max number of differences reached");
       }
     }
   };

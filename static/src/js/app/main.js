@@ -1,12 +1,13 @@
 define(function(require) { "use strict";
 
   require(["promise", "app/model"], function(Promise, Compare) {
+    var log = window.console.log.apply(window.console);
 
     try {
       document.domain = "compare.js";
     }
     catch(e) {
-      console.log("FAILed to set document.domain to compare.js - make sure that you've " +
+      log("FAILed to set document.domain to compare.js - make sure that you've " +
                   "your ServerName is correctly set to compare.js");
     }
 
@@ -336,6 +337,7 @@ define(function(require) { "use strict";
         }
         else {
           this.responseDetails.innerHTML = "An unknown error was raised";
+          log("Error details:", response);
         }
       },
 
