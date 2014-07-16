@@ -1,0 +1,14 @@
+{
+  "indent": 2,
+  "latedef": true,
+  "newcap": true,
+  "noarg": true,
+  "quotmark": "double",
+  "undef": true,
+  "unused": true,
+  "strict": true,
+  "maxlen": 90,
+  "globals": {
+    "define": false
+  }
+}

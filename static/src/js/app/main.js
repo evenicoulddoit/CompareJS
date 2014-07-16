@@ -8,7 +8,7 @@ define(function(require) { "use strict";
     }
     catch(e) {
       log("FAILed to set document.domain to compare.js - make sure that you've " +
-                  "your ServerName is correctly set to compare.js");
+          "your ServerName is correctly set to compare.js");
     }
 
     function htmlEntities(str) {
@@ -337,7 +337,7 @@ define(function(require) { "use strict";
         }
         else {
           this.responseDetails.innerHTML = "An unknown error was raised";
-          console.log("Error details:", response);
+          log("Error details:", response);
         }
       },
 
@@ -369,7 +369,8 @@ define(function(require) { "use strict";
       },
 
       toggleSettings: function(explicit) {
-        if(explicit === true || explicit !== false && this.settingsDom.toggle.className === "") {
+        if(explicit === true ||
+           explicit !== false && this.settingsDom.toggle.className === "") {
           this.settingsDom.toggle.className += "open";
         }
         else {

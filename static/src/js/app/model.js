@@ -98,7 +98,8 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
                       attrs[attr] = new RegExp(attrs[attr], "i");
                     }
                     catch(e) {
-                      throw new SyntaxError("Failed to parse exception RegExp: " + attrs[attr]);
+                      throw new SyntaxError("Failed to parse exception RegExp: " +
+                                            attrs[attr]);
                     }
                   }
                 }

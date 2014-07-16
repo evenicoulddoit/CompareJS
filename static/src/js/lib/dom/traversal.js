@@ -57,7 +57,8 @@ define([], function() { "use strict";
 
   return {
     /**
-     * Get the next node given the previous. Stop if we bubble back up to the initial parent.
+     * Get the next node given the previous.
+     * Stop if we bubble back up to the initial parent.
      * We first look down, then along, then up.
      * @param {Node} [last] - If undefined, returns stop's firstChild
      * @param {Node} stop
@@ -73,7 +74,8 @@ define([], function() { "use strict";
       }
 
       forward = goForward(opts);
-      if(forward !== null && opts.exclude && this.onExclusionList(forward, opts.exclude)) {
+      if(forward !== null && opts.exclude &&
+         this.onExclusionList(forward, opts.exclude)) {
         opts.no_down = true;
         opts.last = forward;
         return this.forward(opts);
