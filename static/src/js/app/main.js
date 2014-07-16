@@ -25,16 +25,16 @@ define(function(require) { "use strict";
 
     var compareCtrl = {
       init: function() {
-        this.responseActive = false;
-        this.frameA = this.make_iframe();
-        this.frameB = this.make_iframe();
-        this.parse_dom();
+        this.isResponseActive = false;
+        this.frameA = this.makeIframe();
+        this.frameB = this.makeIframe();
+        this.parseDom();
         this.settings = {};
         this.events();
-        this.load_input_state();
+        this.loadInputState();
       },
 
-      parse_dom: function() {
+      parseDom: function() {
         this.wrapper = document.getElementById("wrapper");
 
         this.inA = document.getElementById("page-a");
@@ -56,7 +56,7 @@ define(function(require) { "use strict";
         this.responseDetails = document.getElementById("response-details");
       },
 
-      process_settings: function() {
+      processSettings: function() {
         var exclude = this.settingsDom.exclude.value.trim();
         this.settings.cacheBust = this.settingsDom.cacheBust.value === "yes";
         if(exclude) {
@@ -65,7 +65,7 @@ define(function(require) { "use strict";
           }
           catch(e) {
             if(e instanceof SyntaxError) {
-              this.compare_failed("Failed to parse exclusions JSON block");
+              this.compareFailed("Failed to parse exclusions JSON block");
               throw e;
             }
           }
@@ -75,56 +75,56 @@ define(function(require) { "use strict";
         }
       },
 
-      process_start_over: function() {
-        this.process_comparison(true);
+      processStartOver: function() {
+        this.processComparison(true);
       },
 
-      process_comparison: function(loadFrame) {
+      processComparison: function(loadFrame) {
         var contentA, contentB;
 
         if(this.inA.value === "" || this.inB.value === "") {
           return;
         }
 
-        this.process_settings();
-        this.toggle_settings(false);
+        this.processSettings();
+        this.toggleSettings(false);
         this.inBtn.className = "";
         this.wrapper.setAttribute("class", "loading");
-        this.remove_response();
+        this.removeResponse();
 
         if(loadFrame === true) {
-          this.report_progress("Loading pages");
-          contentA = this.get_contents(this.frameA, this.inA.value);
-          contentB = this.get_contents(this.frameB, this.inB.value);
+          this.reportProgress("Loading pages");
+          contentA = this.getContents(this.frameA, this.inA.value);
+          contentB = this.getContents(this.frameB, this.inB.value);
 
           Promise.all([contentA, contentB]).then(
-            this.do_compare.bind(this, true),
-            this.compare_failed.bind(this)
-          ).catch(this.compare_failed.bind(this));
+            this.doCompare.bind(this, true),
+            this.compareFailed.bind(this)
+          ).catch(this.compareFailed.bind(this));
         }
 
         else {
-          this.do_compare(false, [this.frameA.contentDocument.body,
-                                  this.frameB.contentDocument.body]);
+          this.doCompare(false, [this.frameA.contentDocument.body,
+                                 this.frameB.contentDocument.body]);
         }
       },
 
-      response_active: function() {
-        this.responseActive = true;
+      responseActive: function() {
+        this.isResponseActive = true;
         this.wrapper.setAttribute("class", "with-response");
       },
 
-      response_inactive: function() {
-        this.responseActive = false;
+      responseInactive: function() {
+        this.isResponseActive = false;
         this.wrapper.removeAttribute("class");
       },
 
-      do_compare: function(withTimeout, results) {
+      doCompare: function(withTimeout, results) {
         var that = this,
             timeout = withTimeout ? 2000 : 1000,
             compare;
 
-        this.report_progress("Calculating DOM differences");
+        this.reportProgress("Calculating DOM differences");
 
         setTimeout(function() {
           try {
@@ -136,15 +136,15 @@ define(function(require) { "use strict";
             that.compare = compare;
           }
           catch(e) {
-            return that.compare_failed(e);
+            return that.compareFailed(e);
           }
 
-          if(compare.stopped_at_max) {
-            that.response_active();
-            return that.differences_true(compare.differences);
+          if(compare.stoppedAtMax) {
+            that.responseActive();
+            return that.differencesTrue(compare.differences);
           }
           else {
-            that._async_visual();
+            that._asyncVisual();
           }
         }, timeout);
       },
@@ -155,7 +155,7 @@ define(function(require) { "use strict";
        * and it also allows us to update the user with the progress
        * @param  {Object|undefined} resp - Either the previous async response or undefined
        */
-      _async_visual: function(resp) {
+      _asyncVisual: function(resp) {
         var that = this, differences, difference;
 
         if(resp === undefined) resp = { progress: 0 };
@@ -163,38 +163,38 @@ define(function(require) { "use strict";
         if(resp.progress < 100) {
           setTimeout(function() {
             try {
-              resp = that.compare.find_visual_differences(resp.a, resp.b);
-              that.report_progress("Calculating visual differences &mdash; " +
-                                   resp.progress + "% complete");
-              that._async_visual(resp);
+              resp = that.compare.findVisualDifferences(resp.a, resp.b);
+              that.reportProgress("Calculating visual differences &mdash; " +
+                                  resp.progress + "% complete");
+              that._asyncVisual(resp);
             }
             catch(e) {
-              return that.compare_failed(e);
+              return that.compareFailed(e);
             }
           }, 0);
         }
         else {
           differences = that.compare.differences;
-          that.response_active();
+          that.responseActive();
 
           for(difference in differences) {
             if(differences[difference].length !== 0) {
-              return that.differences_true(differences);
+              return that.differencesTrue(differences);
             }
           }
 
-          return that.differences_false();
+          return that.differencesFalse();
         }
       },
 
-      remove_response: function() {
+      removeResponse: function() {
         this.response.removeAttribute("class");
         this.responseIcon.removeAttribute("class");
         this.responseSummary.innerHTML = "";
         this.responseDetails.innerHTML = "";
       },
 
-      differences_true: function(aspects) {
+      differencesTrue: function(aspects) {
         var total = 0,
             differences = document.createElement("ul"),
             aspect, reports, li, count, i;
@@ -206,12 +206,12 @@ define(function(require) { "use strict";
           total += reports.length;
           for(i = 0; i < count; i ++) {
             li = document.createElement("li");
-            li.innerHTML = this.report_difference(aspect, reports[i]);
+            li.innerHTML = this.reportDifference(aspect, reports[i]);
             differences.appendChild(li);
           }
         }
 
-        if(this.compare.stopped_at_max) total += "+";
+        if(this.compare.stoppedAtMax) total += "+";
 
         this.response.setAttribute("class", "errors");
         this.responseIcon.setAttribute("class", "issues fa fa-exclamation-circle");
@@ -219,7 +219,7 @@ define(function(require) { "use strict";
         this.responseDetails.appendChild(differences);
       },
 
-      differences_false: function() {
+      differencesFalse: function() {
         this.response.setAttribute("class", "identical");
         this.responseIcon.setAttribute("class", "fa fa-check-circle");
         this.responseSummary.innerHTML = "Pages are identical";
@@ -227,14 +227,14 @@ define(function(require) { "use strict";
                                          "visual differences, and we couldn't find any!";
       },
 
-      report_progress: function(progressString) {
+      reportProgress: function(progressString) {
         this.response.setAttribute("class", "loading");
         this.responseIcon.setAttribute("class", "fa fa-spin fa-spinner");
         this.responseSummary.innerHTML = progressString;
         this.responseDetails.innerHTML = "";
       },
 
-      report_difference: function(aspect, report) {
+      reportDifference: function(aspect, report) {
         switch(aspect) {
           case "tag":
             return "Tag change" + 
@@ -315,13 +315,13 @@ define(function(require) { "use strict";
         }
       },
 
-      compare_failed: function(response) {
+      compareFailed: function(response) {
         this.wrapper.setAttribute("class", "with-response");
-        this.remove_response();
-        this.response_active();
+        this.removeResponse();
+        this.responseActive();
 
         if(typeof response === "object" && response.name === "ReachedLimitError") {
-          return this.differences_true(this.compare.differences);
+          return this.differencesTrue(this.compare.differences);
         }
 
         this.response.setAttribute("class", "errors");
@@ -337,17 +337,17 @@ define(function(require) { "use strict";
         }
         else {
           this.responseDetails.innerHTML = "An unknown error was raised";
-          log("Error details:", response);
+          console.log("Error details:", response);
         }
       },
 
-      make_iframe: function() {
+      makeIframe: function() {
         var frame = document.createElement("iframe");
         document.getElementById("iframes").appendChild(frame);
         return frame;
       },
 
-      get_contents: function(frame, url) {
+      getContents: function(frame, url) {
         frame.src = this.settings.cacheBust ? cacheBust(url) : url;
         frame.removeEventListener("load", frame._loadEvent);
 
@@ -364,11 +364,11 @@ define(function(require) { "use strict";
         });
       },
 
-      process_if_enter: function(e) {
-        if(e.keyCode == 13) this.process_comparison(true);
+      processIfEnter: function(e) {
+        if(e.keyCode == 13) this.processComparison(true);
       },
 
-      toggle_settings: function(explicit) {
+      toggleSettings: function(explicit) {
         if(explicit === true || explicit !== false && this.settingsDom.toggle.className === "") {
           this.settingsDom.toggle.className += "open";
         }
@@ -377,7 +377,7 @@ define(function(require) { "use strict";
         }
       },
 
-      load_input_state: function() {
+      loadInputState: function() {
         var val;
 
         [this.inA, this.inB, this.settingsDom.exclude].forEach(function(input) {
@@ -388,19 +388,19 @@ define(function(require) { "use strict";
         }, this);
       },
 
-      save_input_state: function() {
+      saveInputState: function() {
         [this.inA, this.inB, this.settingsDom.exclude].forEach(function(input) {
           localStorage.setItem("saved-input" + input.id, input.value);
         }, this);
       },
 
       events: function() {
-        this.inBtn.addEventListener("click", this.process_comparison.bind(this));
-        this.startOverBtn.addEventListener("click", this.process_start_over.bind(this));
-        this.inA.addEventListener("keypress", this.process_if_enter.bind(this));
-        this.inB.addEventListener("keypress", this.process_if_enter.bind(this));
-        this.settingsDom.toggle.addEventListener("click", this.toggle_settings.bind(this));
-        setInterval(this.save_input_state.bind(this), 1000);
+        this.inBtn.addEventListener("click", this.processComparison.bind(this));
+        this.startOverBtn.addEventListener("click", this.processStartOver.bind(this));
+        this.inA.addEventListener("keypress", this.processIfEnter.bind(this));
+        this.inB.addEventListener("keypress", this.processIfEnter.bind(this));
+        this.settingsDom.toggle.addEventListener("click", this.toggleSettings.bind(this));
+        setInterval(this.saveInputState.bind(this), 1000);
       }
     };
 

@@ -51,13 +51,13 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
       style: []
     };
 
-    this.parse_exclusions();
+    this.parseExclusions();
     this.signatureMap = {};
 
     try {
-      this._parse_elements();
-      this._process_imbalances();
-      this._find_movements();
+      this._parseElements();
+      this._processImbalances();
+      this._findMovements();
     }
     catch(e) {
       if(!(e instanceof exceptions.LimitError)) {
@@ -71,11 +71,11 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
     /**
      * Parse the list of elements / changes to exclude 
      */
-    parse_exclusions: function() {
+    parseExclusions: function() {
       var length, i, exclude, attrs, attr;
 
-      this.exclude_completely = [];
-      this.exclude_changes = [];
+      this.excludeCompletely = [];
+      this.excludeChanges = [];
 
       if(this.opts.exclude instanceof Array) {
         length = this.opts.exclude.length;
@@ -87,7 +87,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
           if(typeof exclude.tag === "string" || exclude.attributes instanceof Array) {
             if(typeof exclude.tag === "string") exclude.tag = exclude.tag.toUpperCase();
             if(!exclude.hasOwnProperty("method") || exclude.method === "all") {
-              this.exclude_completely.push(exclude);
+              this.excludeCompletely.push(exclude);
             }
             else {
               attrs = exclude.method.attr;
@@ -103,7 +103,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
                   }
                 }
               }
-              this.exclude_changes.push(exclude);
+              this.excludeChanges.push(exclude);
             }
           }
         }
@@ -113,7 +113,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
     /**
      * Parse the trees and create a map of element signatures -> elements in A and B
      */
-    _parse_elements: function() {
+    _parseElements: function() {
       var list, next, i, signature;
 
       ["a", "b"].forEach(function(tree) {
@@ -121,18 +121,18 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
         list = this["elems" + tree.toUpperCase()] = [];
         next = traverse.forward({
           stop: this[tree],
-          exclude: this.exclude_completely
+          exclude: this.excludeCompletely
         });
 
         while(next) {
           signature = DOM.signature(next);
-          this.add_to_map(next, tree);
+          this.addToMap(next, tree);
           list.push(next);
           next._index = i;
           next = traverse.forward({
             last: next,
             stop: this[tree],
-            exclude: this.exclude_completely
+            exclude: this.excludeCompletely
           });
           i ++;
         }
@@ -144,7 +144,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
     /**
      * Find elements which have moved by traversing both node lists
      */
-    _find_movements: function() {
+    _findMovements: function() {
       var missingA = {}, missingB = {},
           indexA = 0, indexB = 0,
           nextA, nextB, sigA, sigB;
@@ -190,7 +190,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
     /**
      * Add an element to the element map
      */
-    add_to_map: function(elem, source) {
+    addToMap: function(elem, source) {
       var signature = DOM.signature(elem);
       if(!(signature in this.signatureMap)) {
         this.signatureMap[signature] = new types.MapList();
@@ -204,7 +204,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
      * through each of these and try to spot attribute / tagName changes. When
      * we find a probable match, we report and equate their signatures.
      */
-    _process_imbalances: function() {
+    _processImbalances: function() {
       var imbalancesA = [],
           imbalancesB = [],
           signature, elems, elem, i, match;
@@ -220,12 +220,12 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
 
       for(i = 0; i < imbalancesA.length; i ++) {
         elem = imbalancesA[i];
-        match = this._find_match(elem, imbalancesB);
+        match = this._findMatch(elem, imbalancesB);
         if(match) {
 
           // Report all non-exact matches
           if(["attr", "tag", "text"].indexOf(match.type) !== -1) {
-            if(this.should_report_change(elem, match)) {
+            if(this.shouldReportChange(elem, match)) {
               this._difference(match.type, elem, match.elem);
             }
           }
@@ -255,7 +255,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
      * @param  {Array} sigsB - The list of imbalanced elements
      * @return {[type]}       [description]
      */
-    _find_match: function(elemA, elemsB) {
+    _findMatch: function(elemA, elemsB) {
       var matches = [],
           foundIdentical = false,
           match, i, elemB, tagSame, attrsSame, textSame;
@@ -315,19 +315,19 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
      * Decide whether we should report a text/attribute/tag change given the
      * list of exclusions set
      */
-    should_report_change: function(elem, match) {
-      var rule = traverse.onExclusionList(elem, this.exclude_changes);
+    shouldReportChange: function(elem, match) {
+      var rule = traverse.onExclusionList(elem, this.excludeChanges);
 
       // If we can't find a rule for the element, or it's change isn't excluded
       if(!rule || !rule.method.hasOwnProperty(match.type)) return true;
 
       // If we're permitted to change attributes, check that only those ones have
       if(match.type == "attr") {
-        return !this.attr_changes_match(elem, match.elem, rule.method.attr);
+        return !this.attrChangesMatch(elem, match.elem, rule.method.attr);
       }
     },
 
-    attr_changes_match: function(elemA, elemB, exclude) {
+    attrChangesMatch: function(elemA, elemB, exclude) {
       var checked = [],
           length = elemA.attributes.length,
           attr, i, attrA, attrB, exclusion, strippedA, strippedB;
@@ -377,7 +377,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
     /**
      * Find visual changes
      */
-    find_visual_differences: function(nextA, nextB) {
+    findVisualDifferences: function(nextA, nextB) {
       var that = this,
           i = 0, 
           indexA = 0, indexB = 0,
@@ -388,12 +388,12 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
         nextA = traverse.forward({
           stop: this.a,
           all: true,
-          exclude: this.exclude_completely
+          exclude: this.excludeCompletely
         });
         nextB = traverse.forward({
           stop: this.b,
           all: true,
-          exclude: this.exclude_completely
+          exclude: this.excludeCompletely
         });
       }
 
@@ -440,7 +440,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
             differences = visual.elemsDiffer(nextA, nextB);
 
             if(differences !== null) {
-              previousReport = that.already_reported_style_change(nextA, differences);
+              previousReport = that.alreadyReportedStyleChange(nextA, differences);
 
               // If we've never seen this difference before, report it
               if(previousReport === null) {
@@ -471,7 +471,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
             last: nextA,
             stop: that.a,
             all: true,
-            exclude: that.exclude_completely
+            exclude: that.excludeCompletely
           });
         }
         if(forwardB) {
@@ -479,7 +479,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
             last: nextB,
             stop: that.b,
             all: true,
-            exclude: that.exclude_completely
+            exclude: that.excludeCompletely
           });
         }
         i ++;
@@ -507,7 +507,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
      * @param  {Object} differences
      * @return {Element|null} - The first element to report the change, or null
      */
-    already_reported_style_change: function(elem, differences) {
+    alreadyReportedStyleChange: function(elem, differences) {
       var styleDifferences = this.differences.style,
           count = styleDifferences.length, i, comparison;
 
@@ -533,7 +533,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
       this.differences[type].push([elemA, elemB]);
 
       if(this.differenceCount >= this.MAX_DIFFERENCES) {
-        this.stopped_at_max = true;
+        this.stoppedAtMax = true;
         throw new exceptions.LimitError("Max number of differences reached");
       }
     }
