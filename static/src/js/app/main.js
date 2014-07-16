@@ -1,7 +1,7 @@
 define(function(require) { "use strict";
 
   require(["promise", "app/model"], function(Promise, Compare) {
-    var log = window.console.log.apply(window.console);
+    var log = window.console.log.bind(window.console);
 
     try {
       document.domain = "compare.js";
