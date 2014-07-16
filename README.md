@@ -31,7 +31,7 @@ There may be cases where erroneous differences are reported. Examples include so
 
 * Ignore CSRF tokens in Django
 
-```
+```JSON
 {
   "tag": "input",
   "attributes": {
@@ -48,7 +48,7 @@ There may be cases where erroneous differences are reported. Examples include so
     
 * Ignoring all IFrames
 
-```
+```JSON
 {
   "tag": "iframe"
 }
@@ -56,7 +56,7 @@ There may be cases where erroneous differences are reported. Examples include so
     
 * Ignoring a unique cache-busting number appended to an image URL
 
-```
+```JSON
 {
   "tag": "img",
   "method": {
@@ -82,22 +82,24 @@ Comparisons are made by loading 2 remotes sites within IFrames, and inspecting t
 
 Both `a.compare.js` and `b.compare.js` will need to include the script:
 
-    <script type="text/javascript">
-        try {
-            document.domain = "compare.js";
-        }
-        catch(e) {
-            console.error("Failed to set the domain to compare.js, please " +
-                          "check your Apache config");
-        }
-    </script>
+```HTML
+<script type="text/javascript">
+  try {
+    document.domain = "compare.js";
+  }
+  catch(e) {
+    console.error("Failed to set the domain to compare.js, please " +
+                  "check your Apache config");
+  }
+</script>
+```
 
 
 Todos
 -----
 Compare.js is very much pre-alpha and there are a lot of things which need cleaning up:
 
+* Fix build process
 * Performance improvements
-* Made AMD
 * Reporting all style changes, even if unexplained
 * Check space changes are important
