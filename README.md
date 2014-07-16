@@ -99,7 +99,7 @@ Todos
 -----
 Compare.js is very much pre-alpha and there are a lot of things which need cleaning up:
 
+* Fix build process
 * Performance improvements
-* Made AMD
 * Reporting all style changes, even if unexplained
 * Check space changes are important
