@@ -3,12 +3,17 @@ define(function(require) { "use strict";
   require(["promise", "app/model"], function(Promise, Compare) {
     var log = window.console.log.bind(window.console);
 
-    try {
-      document.domain = "compare.js";
+    if(window.location.search.indexOf("?same-origin") === -1) {
+      try {
+        document.domain = "compare.js";
+      }
+      catch(e) {
+        log("FAILed to set document.domain to compare.js - make sure that you've " +
+            "your ServerName is correctly set to compare.js");
+      }
     }
-    catch(e) {
-      log("FAILed to set document.domain to compare.js - make sure that you've " +
-          "your ServerName is correctly set to compare.js");
+    else {
+      log("Compare.js - not setting document.domain - use relative URLs");
     }
 
     function htmlEntities(str) {
