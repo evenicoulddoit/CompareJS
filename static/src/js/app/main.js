@@ -160,35 +160,39 @@ define(function(require) { "use strict";
        * and it also allows us to update the user with the progress
        * @param  {Object|undefined} resp - Either the previous async response or undefined
        */
-      _asyncVisual: function(resp) {
+      _asyncVisual: function(async) {
         var that = this, differences, difference;
 
-        if(resp === undefined) resp = { progress: 0 };
-
-        if(resp.progress < 100) {
-          setTimeout(function() {
-            try {
-              resp = that.compare.findVisualDifferences(resp.a, resp.b);
-              that.reportProgress("Calculating visual differences &mdash; " +
-                                  resp.progress + "% complete");
-              that._asyncVisual(resp);
-            }
-            catch(e) {
-              return that.compareFailed(e);
-            }
-          }, 0);
+        if(async !== undefined && async.calls > 2000) {
+          this.compareFailed("Recursion Error");
         }
+
         else {
-          differences = that.compare.differences;
-          that.responseActive();
-
-          for(difference in differences) {
-            if(differences[difference].length !== 0) {
-              return that.differencesTrue(differences);
-            }
+          if(async === undefined || async.progress < 100) {
+            setTimeout(function() {
+              try {
+                async = that.compare.findVisualDifferences(async); 
+                that.reportProgress("Calculating visual differences &mdash; " +
+                                    async.progress + "% complete");
+                that._asyncVisual(async);
+              }
+              catch(e) {
+                return that.compareFailed(e);
+              }
+            }, 0);
           }
+          else {
+            differences = that.compare.differences;
+            that.responseActive();
 
-          return that.differencesFalse();
+            for(difference in differences) {
+              if(differences[difference].length !== 0) {
+                return that.differencesTrue(differences);
+              }
+            }
+
+            return that.differencesFalse();
+          }
         }
       },
 

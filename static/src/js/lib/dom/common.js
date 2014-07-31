@@ -3,6 +3,10 @@ define([], function() { "use strict";
 
   return {
 
+    isNode: function(unknown) {
+      return (unknown || {}).hasOwnProperty("nodeType");
+    },
+
     nodeType: function(node) {
       return {
         1: "element",

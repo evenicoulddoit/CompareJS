@@ -1,4 +1,4 @@
-define([], function() { "use strict";
+define(["dom/common"], function(DOM) { "use strict";
 
   function goForward(opts) {
     var last = opts.last, forward;
@@ -74,7 +74,9 @@ define([], function() { "use strict";
       }
 
       forward = goForward(opts);
-      if(forward !== null && opts.exclude &&
+
+      if(forward !== null && DOM.nodeType(forward) == "element" && 
+         opts.exclude &&
          this.onExclusionList(forward, opts.exclude)) {
         opts.no_down = true;
         opts.last = forward;
@@ -124,9 +126,19 @@ define([], function() { "use strict";
       for(i = 0; i < exclude_length; i++) {
         exclude = list[i];
 
+        if(DOM.isNode(exclude) && DOM.nodeType(exclude) === "element") {
+          if(exclude === elem) {
+            return exclude;
+          }
+          else {
+            continue;
+          }
+        }
+
         if(exclude.hasOwnProperty("tag") && exclude.tag !== elem.tagName) {
           continue;
         }
+
         if(exclude.hasOwnProperty("attributes")) {
           for(attr in exclude.attributes) {
             if(exclude.attributes[attr] !== elem.getAttribute(attr)) {

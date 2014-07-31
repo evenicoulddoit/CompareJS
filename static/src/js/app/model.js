@@ -238,10 +238,12 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
         }
         else {
           this._difference("removed", elem);
+          this.excludeCompletely.push(elem);
         }
       }
       for(i = 0; i < imbalancesB.length; i ++) {
         this._difference("added", imbalancesB[i]);
+        this.excludeCompletely.push(elem);
       }
     },
 
@@ -378,34 +380,37 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
     /**
      * Find visual changes
      */
-    findVisualDifferences: function(nextA, nextB) {
-      var that = this,
-          i = 0, 
-          indexA = 0, indexB = 0,
-          progress,
+    findVisualDifferences: function(async) {
+      var i = 0, indexA = 0, indexB = 0,
           typeA, typeB, differences, previousReport, types, forwardA, forwardB;
 
-      if(nextA === undefined) {
-        nextA = traverse.forward({
-          stop: this.a,
-          all: true,
-          exclude: this.excludeCompletely
-        });
-        nextB = traverse.forward({
-          stop: this.b,
-          all: true,
-          exclude: this.excludeCompletely
-        });
+      if(async === undefined) {
+        async = {
+          a: traverse.forward({
+            stop: this.a,
+            all: true,
+            exclude: this.excludeCompletely
+          }),
+          b: traverse.forward({
+            stop: this.b,
+            all: true,
+            exclude: this.excludeCompletely
+          }),
+          calls: 0,
+          progress: 0,
+        };
       }
 
-      while(nextA !== null && nextB !== null && i < 25) {
-        typeA = nextA && DOM.nodeType(nextA);
-        typeB = nextB && DOM.nodeType(nextB);
+      async.calls ++;
+
+      while(async.a !== null && async.b !== null && i < 15) {
+        typeA = DOM.isNode(async.a) && DOM.nodeType(async.a);
+        typeB = DOM.isNode(async.b) && DOM.nodeType(async.b);
         types = [typeA, typeB].sort();
         forwardA = forwardB = true;
 
-        if(typeA == "element") indexA = nextA._index;
-        if(typeB == "element") indexB = nextB._index;
+        if(typeA == "element") indexA = async.a._index;
+        if(typeB == "element") indexB = async.b._index;
 
         if(typeA !== typeB) {
 
@@ -438,16 +443,16 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
 
           // Compare visual differences
           if(typeA == "element") {
-            differences = visual.elemsDiffer(nextA, nextB);
+            differences = visual.elemsDiffer(async.a, async.b);
 
             if(differences !== null) {
-              previousReport = that.alreadyReportedStyleChange(nextA, differences);
+              previousReport = this.alreadyReportedStyleChange(async.a, differences);
 
               // If we've never seen this difference before, report it
               if(previousReport === null) {
-                nextA._styleAffects = 1;
-                nextA._styleDiff = differences;
-                that._difference("style", nextA, nextB);
+                async.a._styleAffects = 1;
+                async.a._styleDiff = differences;
+                this._difference("style", async.a, async.b);
               }
 
               // If we have, increment the number of elements affected by it
@@ -460,44 +465,43 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
           // Compare text differences including spaces if important
           // If the nodes are not identical, but when you factor out space
           // changes they are, we check if those space changes matter
-          else if(typeA == "text" && nextA.nodeValue !== nextB.nodeValue &&
-                  DOM.sameIgnoringSpaces(nextA, nextB) &&
-                  visual.textsDiffer(nextA, nextB)) {
-            that._difference("space", nextA, nextB);
+          else if(typeA == "text" && async.a.nodeValue !== async.b.nodeValue &&
+                  DOM.sameIgnoringSpaces(async.a, async.b) &&
+                  visual.textsDiffer(async.a, async.b)) {
+            this._difference("space", async.a, async.b);
           }
         }
 
         if(forwardA) {
-          nextA = traverse.forward({
-            last: nextA,
-            stop: that.a,
+          async.a = traverse.forward({
+            last: async.a,
+            stop: this.a,
             all: true,
-            exclude: that.excludeCompletely
+            exclude: this.excludeCompletely
           });
         }
         if(forwardB) {
-          nextB = traverse.forward({
-            last: nextB,
-            stop: that.b,
+          async.b = traverse.forward({
+            last: async.b,
+            stop: this.b,
             all: true,
-            exclude: that.excludeCompletely
+            exclude: this.excludeCompletely
           });
         }
         i ++;
       }
 
-      if(nextA || nextB) {
-        progress = Math.round(((indexA / that.totalA) + (indexB / that.totalB)) * 50);
-        progress = Math.min(99, progress);
+      if(async.a === null || async.b === null) {
+        async.progress = 100;
       }
-      else {
-        progress = 100;
+
+      else if(indexA && indexB) {
+        async.progress = Math.round(50 * ((indexA / this.totalA) + 
+                                          (indexB / this.totalB)));
+        async.progress = Math.min(99, async.progress);
       }
-      return {
-        a: nextA,
-        b: nextB,
-        progress: progress
-      };
+
+      return async;
     },
 
     /**
