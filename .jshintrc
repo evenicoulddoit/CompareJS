@@ -8,7 +8,9 @@
   "unused": true,
   "strict": true,
   "maxlen": 90,
+  "browser": true,
   "globals": {
-    "define": false
+    "define": false,
+    "requirejs": false
   }
 }

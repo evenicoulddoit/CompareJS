@@ -1,8 +1,8 @@
 define(["specificity"], function(specificity) { "use strict";
 
-  var LEFT_WHITESPACE_REGEX  = /^\s+/,
-      RIGHT_WHITESPACE_REGEX = /\s+$/,
-      CSS_SELECTOR_REGEX = /,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/g;
+  var CSS_SELECTOR_REGEX = /,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/g;
+  //    LEFT_WHITESPACE_REGEX  = /^\s+/,
+  //    RIGHT_WHITESPACE_REGEX = /\s+$/,
 
   function startsWith(a) {
     return function(b) {
@@ -280,7 +280,7 @@ define(["specificity"], function(specificity) { "use strict";
    * @param {string} valueB - The text of node B
    * @returns {Boolean} Whether both left and right are identical
    */
-  function differentSpaces(valueA, valueB) {
+  /*function differentSpaces(valueA, valueB) {
       var aLeft  = valueA.match(LEFT_WHITESPACE_REGEX)  === null,
           bLeft  = valueB.match(LEFT_WHITESPACE_REGEX)  === null,
           aRight = valueA.match(RIGHT_WHITESPACE_REGEX) === null,
@@ -291,55 +291,19 @@ define(["specificity"], function(specificity) { "use strict";
       if(aRight != bRight) differences.push("right");
 
       return differences;
-   }
+   }*/
 
   return {
 
     /**
-     * Given at least one text node, check if space changes matter
+     * Given at least one text node, check if space changes matter.
+     * TODO: Implement.
      * @param  {Text} [nodeA]
      * @param  {Text} [nodeB]
      * @return {Boolean}
      */
     textsDiffer: function(nodeA, nodeB) {
-      var compareNode = nodeA || nodeB,
-          nodeWindow = compareNode.ownerDocument.parent,
-          parentStyle = window.getComputedStyle(compareNode.parentNode),
-          parentBlock = parentStyle.getPropertyValue("display") === "block",
-          parentFloat = parentStyle.getPropertyValue("float") !== "none",
-          parentSpaceMatters = parentBlock || parentFloat,
-          textA = nodeA !== null ? nodeA.nodeValue : "",
-          textB = nodeB !== null ? nodeB.nodeValue : "",
-          back, forward;
-
-      return false;
-          /*if()
-
-          while(back !== this.a) {
-            back = goBack(nodeA, this.a, true);
-            if(back )
-
-          }
-
-          while(forward !== this.a) {
-
-          }
-
-        // Direct block element
-        if(!node.previousSibling && !node.nextSibling && hasBlockContext(node.parentNode)) {
-          return false;
-        }
-
-        // If important in any direction, 
-        if(differences.indexOf("left") != -1 && spaceImportant(node, goBack)) {
-          return true;
-        }
-        if(differences.indexOf("right") != -1 && spaceImportant(node, goForward)) {
-          return true;
-        }
-
-        return false;
-        */
+      return nodeA == nodeB ? false : false;
     },
 
     /**

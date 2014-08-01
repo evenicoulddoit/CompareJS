@@ -10,8 +10,6 @@
   "repository": "https://github.com/glassesdirect/comparejs/",
   "keywords": ["comparison", "test", "DOM", "web page"],
   "bugs": "https://github.com/glassesdirect/comparejs/issues",
-  "dependencies": {
-    "requirejs": ">=2.1.14"
-  },
+  "dependencies": {},
   "version": "0.0.1"
 }
