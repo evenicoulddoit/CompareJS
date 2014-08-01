@@ -95,11 +95,56 @@ Both `a.compare.js` and `b.compare.js` will need to include the script:
 ```
 
 
+Contributing
+------------
+The repository includes both a `.editorconfig` and a `.jshintrc`, to ensure that coding standards are adhered too.
+
+Before developing, you will need to install the various requirements. After installing *Python*, *Ruby* and *NodeJS*:
+1. Install Python requirements
+
+   ```Python
+   pip install -r requirements.txt
+   ```
+   
+2. Install Ruby requirements
+
+    ```Shell
+    gem install bundler
+    bundle install
+    ```
+    
+3. Install RequireJS globally
+
+    ```Shell
+    [sudo] npm install -g requirejs
+    ```
+    
+4. Install JSHint globally
+
+    ```Shell
+    [sudo] npm install -g jshint
+    ```
+    
+Whilst developing from the `/src` directory, you will need to compile your Sass files on the fly using:
+
+```Shell
+# In /src
+compass watch
+```
+
+Before comitting changes, run the build script with:
+    
+
+```Shell
+python build.py
+```
+
+This will compile all your source files, and lint them for any existing issues.
+
 Todos
 -----
 Compare.js is very much pre-alpha and there are a lot of things which need cleaning up:
 
-* Fix build process
 * Performance improvements
 * Reporting all style changes, even if unexplained
 * Check space changes are important
