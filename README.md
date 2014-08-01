@@ -102,32 +102,32 @@ The repository includes both a `.editorconfig` and a `.jshintrc`, to ensure that
 Before developing, you will need to install the various requirements. After installing *Python*, *Ruby* and *NodeJS*:
 1. Install Python requirements
 
-   ```Python
+   ```bash
    pip install -r requirements.txt
    ```
    
 2. Install Ruby requirements
 
-    ```Shell
+    ```bash
     gem install bundler
     bundle install
     ```
     
 3. Install RequireJS globally
 
-    ```Shell
+    ```bash
     [sudo] npm install -g requirejs
     ```
     
 4. Install JSHint globally
 
-    ```Shell
+    ```bash
     [sudo] npm install -g jshint
     ```
     
 Whilst developing from the `/src` directory, you will need to compile your Sass files on the fly using:
 
-```Shell
+```bash
 # In /src
 compass watch
 ```
@@ -135,7 +135,7 @@ compass watch
 Before comitting changes, run the build script with:
     
 
-```Shell
+```bash
 python build.py
 ```
 
