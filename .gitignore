@@ -1,4 +1,5 @@
-node_modules/*
 .sass-cache/*
-static/js/*.report.txt
+node_modules/*
+src/css/*
+src/.sass-cache/*
 Gemfile.lock

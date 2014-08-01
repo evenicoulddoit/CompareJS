@@ -1,7 +1,7 @@
 ({
-  baseUrl: "static/src/js/lib",
+  baseUrl: "../src/js/lib",
   paths: {
-    app: "../app/"
+    app: "../app"
   },
   shim: {
     "promise": {
@@ -11,7 +11,7 @@
   name: "almond",
   include: ["app/main"],
   insertRequire: ["app/main"],
-  out: "built/compare.js",
+  out: "../out/js/compare.js",
   optimize: "uglify2",
   findNestedDependencies: true,
   wrap: true
