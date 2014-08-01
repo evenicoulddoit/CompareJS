@@ -1,3 +1,4 @@
+out/*
 .sass-cache/*
 node_modules/*
 src/css/*
