@@ -1,0 +1,2 @@
+# Python dependencies to be install with pip
+beautifulsoup4

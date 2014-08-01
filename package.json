@@ -1,0 +1,17 @@
+{
+  "name": "Compare.js",
+  "author": {
+    "name": "Ian Clark",
+    "email": "ianclark001+compare@gmail.com",
+    "url": "http://ianclark.me"
+  },
+  "description": "A web page comparison tool, checking both the DOM and the visuals for differences.",
+  "homepage": "https://github.com/glassesdirect/comparejs/",
+  "repository": "https://github.com/glassesdirect/comparejs/",
+  "keywords": ["comparison", "test", "DOM", "web page"],
+  "bugs": "https://github.com/glassesdirect/comparejs/issues",
+  "dependencies": {
+    "requirejs": ">=2.1.14"
+  },
+  "version": "0.0.1"
+}
