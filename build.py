@@ -136,7 +136,7 @@ def call(*args):
     """
     Try to call a shell command, raising an exception on stderr
     """
-    subprocess.check_call(args)
+    subprocess.check_call(args, shell=True)
 
 
 def log(msg, msg_type="standard"):
