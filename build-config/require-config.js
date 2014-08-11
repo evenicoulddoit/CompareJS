@@ -14,5 +14,8 @@
   out: "../out/js/compare.js",
   optimize: "uglify2",
   findNestedDependencies: true,
-  wrap: true
+  wrap: true,
+  pragmas: {
+    test: false
+  }
 })

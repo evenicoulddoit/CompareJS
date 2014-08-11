@@ -8,6 +8,7 @@
  *  - specificity: e.g. 0,1,0,0
  *  - parts: array with details about each part of the selector that counts towards the specificity
  */
+
 define([], function() { 'use strict';
   var calculate;
 

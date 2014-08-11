@@ -15,6 +15,7 @@ define(["specificity"], function(specificity) { "use strict";
     for(i = 0; i < length; i++) {
       delete obj[keys[i]];
     }
+    return obj;
   }
 
   function shorthandMarginPadding(differences) {
@@ -293,7 +294,7 @@ define(["specificity"], function(specificity) { "use strict";
       return differences;
    }*/
 
-  return {
+  var exports = {
 
     /**
      * Given at least one text node, check if space changes matter.
@@ -349,4 +350,15 @@ define(["specificity"], function(specificity) { "use strict";
       return sharedCount !== 0 ? sharedDifferences: null;
     }
   };
+
+  //>>includeStart("test", pragmas.test)
+  exports._startsWith = startsWith;
+  exports._removeKeys = removeKeys;
+  exports._notEmpty = notEmpty;
+  exports._elementMatches = elementMatches;
+  exports._uniformName = uniformName;
+  exports._equalValues = equalValues;
+  //>>includeEnd("test")
+
+  return exports;
 });
