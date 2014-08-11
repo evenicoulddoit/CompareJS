@@ -56,7 +56,8 @@ def compile_js():
     Compile the JavaScript AMD source files into a single uglified file.
     """
     log("Compiling RequireJS files", msg_type="title")
-    call("r.js", "-o", JS_CONFIG_FILE)
+    r_js = "r.js.cmd" if os.name == "nt" else "r.js"
+    call(r_js, "-o", JS_CONFIG_FILE)
     log("OK", msg_type="response")
 
 
