@@ -19,6 +19,8 @@ JS_CONFIG_FILE = os.path.join(CONFIG_HOME, "require-config.js")
 INDEX_HTML = os.path.join(SRC_DIR, "index.html")
 JSHINT_IGNORE = ("require.js", "almond.js", "promise.js", "specificity.js")
 
+IS_WINDOWS = os.name == "nt"
+
 
 def change_cwd():
     """
@@ -56,7 +58,7 @@ def compile_js():
     Compile the JavaScript AMD source files into a single uglified file.
     """
     log("Compiling RequireJS files", msg_type="title")
-    r_js = "r.js.cmd" if os.name == "nt" else "r.js"
+    r_js = "r.js.cmd" if IS_WINDOWS else "r.js"
     call(r_js, "-o", JS_CONFIG_FILE)
     log("OK", msg_type="response")
 
@@ -137,7 +139,7 @@ def call(*args):
     """
     Try to call a shell command, raising an exception on stderr
     """
-    subprocess.check_call(args, shell=True)
+    subprocess.check_call(args, shell=IS_WINDOWS)
 
 
 def log(msg, msg_type="standard"):
