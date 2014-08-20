@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 import os
 import shutil
 import subprocess
@@ -10,6 +9,7 @@ from bs4 import BeautifulSoup
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 BUILD_DIR = os.path.join(BASE_DIR, "out")
 SRC_DIR = os.path.join(BASE_DIR, "src")
+TEST_DIR = os.path.join(BASE_DIR, "test")
 JS_DIR = os.path.join(SRC_DIR, "js")
 
 CONFIG_HOME = os.path.join(BASE_DIR, "build-config")
@@ -103,6 +103,15 @@ def jshint_files():
     log("OK", msg_type="response")
 
 
+def run_js_tests():
+    """
+    Collect all the JavaScript test files, inject them into a Qubit test HTML
+    file, and call PhantomJS to kick off the tests and get the results.
+    """
+    log("Running JS tests")
+    script_markup = "<script src="
+
+
 def msg_success():
     """
     The message to log on successful build
@@ -130,6 +139,7 @@ def do_build():
         compile_js()
         compile_html()
         jshint_files()
+        find_js_tests()
         msg_success()
     except subprocess.CalledProcessError:
         msg_fail()
@@ -154,6 +164,17 @@ def log(msg, msg_type="standard"):
         print ">>> {0}".format(msg)
     else:
         print msg
+
+
+def find_js_tests():
+    """
+    Search the test directory for all JavaScript files beginning with "test"
+    and return their path relative to the test directory.
+    """
+    return [os.path.join(directory, doc).lstrip(TEST_DIR)
+            for directory, _, docs in os.walk(TEST_DIR)
+            for doc in docs
+            if doc.startswith("test_") and doc.endswith(".js")]
 
 
 if __name__ == "__main__":

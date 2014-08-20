@@ -1,6 +1,10 @@
 var assert = require("chai").assert,
+    console = require("console"),
+    jsdom = require("jsdom").jsdom,
     requirejs = require(__base + ".config/require");
 
+var document = jsdom(""),
+    window = document.window;
 
 describe("dom/visual", function() {
   var visual;
@@ -65,6 +69,15 @@ describe("dom/visual", function() {
           b: 1,
           c: "1"
         }, ["a", "b", "c"]));
+    });
+  });
+
+  describe("#elementMatches()", function() {
+    it("Correctly identifies when an element matches a CSS selector", function() {
+      var div = document.createElement("div");
+      console.log(div.matches("div"));
+      console.log(visual._elementMatches(div, "div"));
+      assert.isTrue(visual._elementMatches(div, "div"));
     });
   });
 });
