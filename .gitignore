@@ -3,4 +3,5 @@ out/*
 node_modules/*
 src/css/*
 src/.sass-cache/*
+test/index.html
 Gemfile.lock
