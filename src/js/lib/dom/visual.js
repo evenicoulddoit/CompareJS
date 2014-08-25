@@ -18,53 +18,61 @@ define(["specificity"], function(specificity) { "use strict";
     return obj;
   }
 
+  /**
+   * Where possible, combines margin and padding rules into their shorthand
+   * variants (e.g. margin-top,bottom,left and right of 5px -> margin: 5px)
+   * @param  {Object} differences - CSS rule & value pairs
+   * @return {Object} the differences object modified in-place
+   */
   function shorthandMarginPadding(differences) {
-    var diffTree, removeOriginals, keys;
+    var keys;
 
-    ["a", "b"].forEach(function(tree) {
-      ["margin", "padding"].forEach(function(rule) {
-        diffTree = differences[tree];
-        removeOriginals = false;
-        keys = Object.keys(diffTree).filter(function(key) {
-          return key.indexOf(rule + "-") === 0;
-        });
+    ["margin", "padding"].forEach(function(rule) {
+      keys = Object.keys(differences).filter(function(key) {
+        return key.indexOf(rule + "-") === 0;
+      });
 
-        // We can only shorthand if all values are set
-        if(keys.length == 4) {
+      // We can only shorthand if all values are set
+      if(keys.length == 4) {
 
-          // All values identical
-          if(equalValues(diffTree, keys)) {
-            removeOriginals = true;
-            diffTree[rule] = diffTree[keys[0]];
+        // All values identical
+        if(equalValues(differences, keys)) {
+          differences[rule] = differences[keys[0]];
+        }
+
+        // Equal left and values, required at least for a shorthand
+        else if(equalValues(differences, [rule + "-left", rule + "-right"])) {
+
+          // Equal x's and equal y's
+          if(equalValues(differences, [rule + "-top", rule + "-bottom"])) {
+            differences[rule] = differences[rule + "-top"] + " " +
+                                differences[rule + "-left"];
           }
 
-          // Equal left and values, required at least for a shorthand
-          else if(equalValues(diffTree, [rule + "-left", rule + "-right"])) {
-            removeOriginals = true;
+          // Equal x's different top and bottom
+          else {
+            differences[rule] = differences[rule + "-top"] + " " +
+                                differences[rule + "-left"] + " " +
+                                differences[rule + "-bottom"];
 
-            // Equal x's and equal y's
-            if(equalValues(diffTree, [rule + "-top", rule + "-bottom"])) {
-              diffTree[rule] = diffTree[rule + "-top"] + " " +
-                               diffTree[rule + "-left"];
-            }
-
-            // Equal x's different top and bottom
-            else {
-              diffTree[rule] = diffTree[rule + "-top"] + " " +
-                               diffTree[rule + "-left"] + " " +
-                               diffTree[rule + "-bottom"];
-
-            }
-          }
-
-          if(removeOriginals) {
-            removeKeys(diffTree, [
-              rule + "-top", rule + "-right", rule + "-bottom", rule + "-left"
-            ]);
           }
         }
-      });
+
+        // All different
+        else {
+          differences[rule] = differences[rule + "-top"] + " " +
+                              differences[rule + "-right"] + " " +
+                              differences[rule + "-bottom"] + " " +
+                              differences[rule + "-left"];
+        }
+
+        removeKeys(differences, [
+          rule + "-top", rule + "-right", rule + "-bottom", rule + "-left"
+        ]);
+      }
     });
+
+    return differences;
   }
 
   /**
@@ -101,7 +109,7 @@ define(["specificity"], function(specificity) { "use strict";
    * @param  {Element} elemB
    * @return {Object} - An object of property name -> property value pairs
    */
-  function styleRuleDifference(elemA, elemB) {
+  function styleRuleDifferences(elemA, elemB) {
     var stylesA = findRulesFor(elemA),
         stylesB = findRulesFor(elemB),
         differences = {},
@@ -204,9 +212,10 @@ define(["specificity"], function(specificity) { "use strict";
   /**
    * Edit an object of rules mappings in-place, replacing items where the
    * specificity of the selector is at least as high as the existing
-   * @param  {Number} spec - The specificty value for these new rules
-   * @param  {Object} existingStyles - The existing rules
-   * @param  {Object} newStyles - The new rules to conditionally add
+   * @param {Number} spec - The specificty value for these new rules
+   * @param {Object} existingStyles - The existing rules
+   * @param {CSSStyleDeclaration} newStyles - The new rules to conditionally add
+   * @returns {Object} the existing styles
    */
   function specificityAdd(spec, existingStyles, newStyles) {
     var length = newStyles.length,
@@ -223,6 +232,8 @@ define(["specificity"], function(specificity) { "use strict";
         };
       }
     }
+
+    return existingStyles;
   }
 
   /**
@@ -251,7 +262,9 @@ define(["specificity"], function(specificity) { "use strict";
     return true;
   }
 
-  /*function spaceImportant(node, nextFn) {
+  /**
+   * TODO: Implement a test as to whether spaces make a visual difference
+
     var previous = node;
     while(true) {
       previous = nextFn(previous, null, true);
@@ -280,8 +293,7 @@ define(["specificity"], function(specificity) { "use strict";
    * @param {string} valueA - The text of node A
    * @param {string} valueB - The text of node B
    * @returns {Boolean} Whether both left and right are identical
-   */
-  /*function differentSpaces(valueA, valueB) {
+  function differentSpaces(valueA, valueB) {
       var aLeft  = valueA.match(LEFT_WHITESPACE_REGEX)  === null,
           bLeft  = valueB.match(LEFT_WHITESPACE_REGEX)  === null,
           aRight = valueA.match(RIGHT_WHITESPACE_REGEX) === null,
@@ -317,7 +329,7 @@ define(["specificity"], function(specificity) { "use strict";
      * width changing a child's, and reporting on both.
      * @param  {Element} elemA
      * @param  {Element} elemB
-     * @return {Boolean} Whether these two elements styles differ.
+     * @return {Object|null} An object of differences if any found, or null
      */
     elemsDiffer: function(elemA, elemB) {
       var computedDifferences = styleComputedDifferences(elemA, elemB),
@@ -326,7 +338,7 @@ define(["specificity"], function(specificity) { "use strict";
           ruleDifferences, difference;
 
       if(computedDifferences.length) {
-        ruleDifferences = styleRuleDifference(elemA, elemB);
+        ruleDifferences = styleRuleDifferences(elemA, elemB);
 
         for(difference in ruleDifferences) {
           if(computedDifferences.filter(startsWith(difference)).length > 0) {
@@ -341,11 +353,9 @@ define(["specificity"], function(specificity) { "use strict";
         }
       }
 
-      shorthandMarginPadding(sharedDifferences);
-
-      //console.log(sharedDifferences);
-      //shorthandStyleDifferences(sharedDifferences);
-      //   
+      ["a", "b"].forEach(function(tree) {
+        shorthandMarginPadding(sharedDifferences[tree]);
+      });
 
       return sharedCount !== 0 ? sharedDifferences: null;
     }
@@ -354,8 +364,13 @@ define(["specificity"], function(specificity) { "use strict";
   //>>includeStart("test", pragmas.test)
   exports._startsWith = startsWith;
   exports._removeKeys = removeKeys;
+  exports._shorthandMarginPadding = shorthandMarginPadding;
+  exports._styleComputedDifferences = styleComputedDifferences;
+  exports._styleRuleDifferences = styleRuleDifferences;
+  exports._findRulesFor = findRulesFor;
   exports._notEmpty = notEmpty;
   exports._elementMatches = elementMatches;
+  exports._specificityAdd = specificityAdd;
   exports._uniformName = uniformName;
   exports._equalValues = equalValues;
   //>>includeEnd("test")
