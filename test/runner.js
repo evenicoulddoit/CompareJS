@@ -106,11 +106,11 @@
           catch(TypeError) {}
           if(details.expected )
 
-          response += 'expected: ' + details.expected + ', but was: ' + details.actual;
+          response += '\n    Expected: ' + details.expected + '\n    Actual: ' + details.actual;
         }
 
         if (details.source) {
-          response += "\n" + details.source;
+          response += "\n\n" + details.source;
         }
 
         currentTestAssertions.push('Failed assertion: ' + response);
@@ -127,9 +127,10 @@
         name += result.name;
 
         if (result.failed) {
-          console.log('\n' + 'Test failed: ' + name);
+          console.log('\n\n' + 'Test failed: ' + name);
 
           for (i = 0, len = currentTestAssertions.length; i < len; i++) {
+            if(i !== 0) console.log('');
             console.log('    ' + currentTestAssertions[i]);
           }
         }

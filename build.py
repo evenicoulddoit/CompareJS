@@ -156,12 +156,12 @@ def do_build():
     """
     try:
         change_cwd()
+        jshint_files()
+        run_js_tests()
         create_built_dir()
         compile_compass()
         compile_js()
         compile_html()
-        jshint_files()
-        run_js_tests()
         msg_success()
     except subprocess.CalledProcessError:
         msg_fail()
