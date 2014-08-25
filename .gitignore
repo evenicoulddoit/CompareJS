@@ -1,6 +1,7 @@
 out/*
 .sass-cache/*
 node_modules/*
+bower_components/*
 src/css/*
 src/.sass-cache/*
 test/index.html

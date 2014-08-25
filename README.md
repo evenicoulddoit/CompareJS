@@ -99,7 +99,7 @@ Contributing
 ------------
 The repository includes both a `.editorconfig` and a `.jshintrc`, to ensure that coding standards are adhered too.
 
-Before developing, you will need to install the various requirements. After installing *Python*, *Ruby* and *NodeJS*:
+Before developing, you will need to install the various requirements. After installing *Python*, *Ruby*, *PhantomJS* and *NodeJS*:
 1. Install Python requirements
 
    ```bash
@@ -112,19 +112,26 @@ Before developing, you will need to install the various requirements. After inst
     gem install bundler
     bundle install
     ```
-    
+
 3. Install RequireJS globally
 
     ```bash
     [sudo] npm install -g requirejs
     ```
-    
+
 4. Install JSHint globally
 
     ```bash
     [sudo] npm install -g jshint
     ```
-    
+
+5. Install Bower requirements
+
+    ```bash
+    [sudo] npm install -g bower
+    bower install
+    ```
+
 Whilst developing from the `/src` directory, you will need to compile your Sass files on the fly using:
 
 ```bash

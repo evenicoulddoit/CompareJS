@@ -1,0 +1,28 @@
+{
+  "name": "Compare.js",
+  "version": "0.0.1",
+  "homepage": "https://github.com/glassesdirect/comparejs",
+  "authors": [
+    "Ian Clark <ian.clark.001@gmail.com>"
+  ],
+  "description": "A web page comparison tool, checking both the DOM and the visuals for differences.",
+  "keywords": [
+    "comparison",
+    "test",
+    "DOM",
+    "web",
+    "page"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+  ],
+  "dependencies": {
+    "jquery": "~2.1.1",
+    "qunit": "~1.15.0"
+  }
+}

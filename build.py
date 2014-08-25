@@ -109,9 +109,9 @@ def run_js_tests():
     Copy the test directory into the build one, find all the test suites,
     and modify the Qunit HTML page to include all of them.
     """
-    log("Building JS tests", msg_type="title")
+    log("Building & Running JS tests", msg_type="title")
 
-    os.remove(os.join(TEST_DIR, "index.html"))
+    os.remove(os.path.join(TEST_DIR, "index.html"))
 
     html = None
     scripts = find_js_tests()
@@ -124,6 +124,14 @@ def run_js_tests():
 
     with open(os.path.join(TEST_DIR, "index.html"), "w") as html_out:
         html_out.write(html)
+
+    os.chdir(TEST_DIR)
+    call("phantomjs.exe" if IS_WINDOWS else "phantomjs",
+         "runner.js", "index.html")
+    os.chdir(BASE_DIR)
+
+    log("OK", msg_type="response")
+
 
 
 def msg_success():
@@ -153,7 +161,7 @@ def do_build():
         compile_js()
         compile_html()
         jshint_files()
-        build_js_tests()
+        run_js_tests()
         msg_success()
     except subprocess.CalledProcessError:
         msg_fail()

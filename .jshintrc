@@ -11,6 +11,9 @@
   "browser": true,
   "globals": {
     "define": false,
-    "requirejs": false
+    "require": false,
+    "requirejs": false,
+    "QUnit": false,
+    "$": false
   }
 }
