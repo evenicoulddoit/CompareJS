@@ -3,11 +3,11 @@
 # Compass options
 http_path = "/compare/"
 
-css_dir = "out/css"
+css_dir = "dist/css"
 sass_dir = "src/sass"
-images_dir = "out/img"
-javascripts_dir = "out/js"
-fonts_dir = "out/font"
+images_dir = "dist/img"
+javascripts_dir = "dist/js"
+fonts_dir = "dist/font"
 
 http_javascripts_dir = "js"
 http_stylesheets_dir = "css"

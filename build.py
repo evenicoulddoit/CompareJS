@@ -12,7 +12,7 @@ TEST_DIR = os.path.join(BASE_DIR, "test")
 JS_DIR = os.path.join(SRC_DIR, "js")
 
 # Build configuration directories
-BUILD_DIR = os.path.join(BASE_DIR, "out")
+BUILD_DIR = os.path.join(BASE_DIR, "dist")
 CONFIG_HOME = os.path.join(BASE_DIR, "build-config")
 SASS_CONFIG_FILE = os.path.join(CONFIG_HOME, "sass-config.rb")
 JS_CONFIG_FILE = os.path.join(CONFIG_HOME, "require-config.js")

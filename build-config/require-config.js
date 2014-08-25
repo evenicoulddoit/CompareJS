@@ -11,7 +11,7 @@
   name: "almond",
   include: ["app/main"],
   insertRequire: ["app/main"],
-  out: "../out/js/compare.js",
+  out: "../dist/js/compare.js",
   optimize: "uglify2",
   findNestedDependencies: true,
   wrap: true,
