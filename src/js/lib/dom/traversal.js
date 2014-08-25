@@ -55,7 +55,7 @@ define(["dom/common"], function(DOM) { "use strict";
     return null;
   }
 
-  return {
+  var exports = {
     /**
      * Get the next node given the previous.
      * Stop if we bubble back up to the initial parent.
@@ -115,8 +115,8 @@ define(["dom/common"], function(DOM) { "use strict";
     /**
      * Return whether an element matches any of the provided list of exclusions
      * @param  {Element} elem
-     * @param  {Array} list - The list of exclusion objecta
-     * @return {Object|Boolean} - Either the exclusion rule or false
+     * @param  {Array} list - The list of exclusion objects
+     * @return {Boolean} - Whether the element is on the exclusion list or not
      */
     onExclusionList: function(elem, list) {
       var exclude_length = list.length,
@@ -146,9 +146,19 @@ define(["dom/common"], function(DOM) { "use strict";
             }
           }
         }
-        return exclude;
+        return true;
       }
       return false;
     }
   };
+
+  //>>includeStart("test", pragmas.test)
+  exports._goForward = goForward;
+  exports._previousElement = previousElement;
+  exports._nextElement = nextElement;
+  exports._getFirstChild = getFirstChild;
+  exports._getLastChild = getLastChild;
+  //>>includeEnd("test")
+
+  return exports;
 });
