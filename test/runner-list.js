@@ -88,9 +88,12 @@
       var currentTestAssertions = [];
 
       QUnit.log(function(details) {
-        var response;
+        var is_windows = window.navigator.platform === "Win32",
+            response_ok = is_windows ? "(OK) " : "✔ ",
+            response_no = is_windows ? "(NO) " : "✖ ",
+            response;
 
-        console.log((details.result ? "✔ ": "✖ ") + details.message);
+        console.log((details.result ? response_ok: response_no) + details.message);
 
         if (!details.result) {
           response = details.message || '';
@@ -105,6 +108,7 @@
               details.expected = JSON.stringify(details.expected);
               details.actual = JSON.stringify(details.actual);
             }
+            catch(e) {}
 
             response += 'expected: ' + details.expected + ', but was: ' + details.actual;
           }

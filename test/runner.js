@@ -103,7 +103,7 @@
             details.expected = JSON.stringify(details.expected);
             details.actual = JSON.stringify(details.actual);
           }
-          catch(TypeError) {}
+          catch(e) {}
           if(details.expected )
 
           response += '\n    Expected: ' + details.expected + '\n    Actual: ' + details.actual;
