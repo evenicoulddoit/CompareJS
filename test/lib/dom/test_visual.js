@@ -22,47 +22,47 @@
     return this.styles[prop];
   };
 
-  QUnit.module("dom/visual", {
-    setup: function() {
-
-      // Note: unfortunately PhantomJS doesn't have a default stylesheet,
-      // and so the length of a CSSStyleDeclaration will depend on the rules
-      // set explicitly here. For all tested browsers this was _not_ the case,
-      // where the number of rules was _always_ the same for all elements.
-      // 
-      // Note: Hex colours are converted to RGB by the browser.
-      $("body").append(
-        "<div id=\"test-container\"> " +
-          "<div id=\"foo-wrapper\"> " +
-            "<div id=\"foo\">zulu</div> " +
-          "</div> " +
-          "<div id=\"bar-wrapper\"> " +
-            "<div id=\"bar\">zulu</div> " +
-          "</div> " +
-          "<style> " +
-            "div { " +
-              "display: block; " +
-              "font-weight: 400; " +
-              "color: #000; " +
-            "}" +
-            ".color { color: #111; } " +
-            ".font-weight { font-weight: 700; } " +
-            ".background-color { background-color: #eee; } " +
-            ".display { display: inline-block; } " +
-            ".width { width: 500px; } " +
-            "div.position { position: absolute; } " +
-         "</style> " +
-        "</div>"
-      );
-    },
-
-    teardown: function() {
-      $("#test-container").remove();
-    }
-  });
-
   require(["config"], function() {
     require(["dom/visual"], function(visual) {
+
+      QUnit.module("dom/visual", {
+        setup: function() {
+
+          // Note: unfortunately PhantomJS doesn't have a default stylesheet,
+          // and so the length of a CSSStyleDeclaration will depend on the rules
+          // set explicitly here. For all tested browsers this was _not_ the case,
+          // where the number of rules was _always_ the same for all elements.
+          // 
+          // Note: Hex colours are converted to RGB by the browser.
+          $("body").append(
+            "<div id=\"test-container\"> " +
+              "<div id=\"foo-wrapper\"> " +
+                "<div id=\"foo\">zulu</div> " +
+              "</div> " +
+              "<div id=\"bar-wrapper\"> " +
+                "<div id=\"bar\">zulu</div> " +
+              "</div> " +
+              "<style> " +
+                "div { " +
+                  "display: block; " +
+                  "font-weight: 400; " +
+                  "color: #000; " +
+                "}" +
+                ".color { color: #111; } " +
+                ".font-weight { font-weight: 700; } " +
+                ".background-color { background-color: #eee; } " +
+                ".display { display: inline-block; } " +
+                ".width { width: 500px; } " +
+                "div.position { position: absolute; } " +
+             "</style> " +
+            "</div>"
+          );
+        },
+
+        teardown: function() {
+          $("#test-container").remove();
+        }
+      });
 
 
       /**
@@ -84,7 +84,8 @@
             expected = { b: "b", d: "d" };
 
         assert.deepEqual(visual._removeKeys(initial, toRemove), expected,
-                         "The correct keys are removed from the object");
+          "The correct keys are removed from the object"
+        );
       });
 
 
