@@ -120,7 +120,7 @@ def run_js_tests():
     scripts_html = "\n  ".join([script_tpl.format(script)
                                 for script in scripts])
 
-    with open(os.path.join(TEST_DIR, "index.tpl")) as html_in:
+    with open(os.path.join(TEST_DIR, "_index.tpl")) as html_in:
         html = html_in.read().replace("{{TESTS}}", scripts_html)
 
     with open(os.path.join(TEST_DIR, "index.html"), "w") as html_out:
