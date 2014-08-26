@@ -22,6 +22,52 @@
     return this.styles[prop];
   };
 
+  /**
+   * Inspired by http://bit.ly/1mLYevv
+   * @param  {string} hex - A hexadecimal colour
+   * @return {string} - The RGB variant
+   */
+  function hexToRgb(hex) {
+      // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+      var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+          return r + r + g + g + b + b;
+      });
+
+      var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return "rgb(" + parseInt(result[1], 16) + ", " +
+                      parseInt(result[2], 16) + ", " +
+                      parseInt(result[3], 16) + ")";
+  }
+
+  /**
+   * Calculate whether this browser converts color style declarations.
+   * Currently IE doesn't convert color but it _does_ background-color.
+   * All other browsers convert all to rgb.
+   * @return {function} - A method to convert colours approrpiately
+   */
+  var browserColourFn = (function() {
+    var $style = $("<style id='tmp-styles'> div { color: #000; } </style>").appendTo("body"),
+        style = $style.get(0),
+        styleSheets = document.styleSheets,
+        sheetCount = styleSheets.length,
+        fn = function(x) { return x },
+        i;
+
+    for(i = 0; i < sheetCount; i++) {
+      if(styleSheets[i].ownerNode === style) {
+        if(styleSheets[i].cssRules[0].style.getPropertyValue("color").indexOf("rgb") === 0) {
+          fn = hexToRgb;
+        }
+        break;
+      }
+    }
+
+    $style.remove();
+    return fn;
+  })();
+
+
   require(["config"], function() {
     require(["dom/visual"], function(visual) {
 
@@ -213,7 +259,7 @@
         $a.addClass("color");
         differences = visual._styleRuleDifferences(a, b);
         assert.deepEqual(differences, {
-            "color": ["rgb(17, 17, 17)", "rgb(0, 0, 0)"]
+            "color": [browserColourFn("#111"), browserColourFn("#000")]
           },
           "Adding a class to A which changes its color is recognised"
         );
@@ -221,7 +267,7 @@
         $b.addClass("display");
         differences = visual._styleRuleDifferences(a, b);
         assert.deepEqual(differences, {
-            "color": ["rgb(17, 17, 17)", "rgb(0, 0, 0)"],
+            "color": [browserColourFn("#111"), browserColourFn("#000")],
             "display": ["block", "inline-block"]
           },
           "Adding a class to B which changes its display is recognised"
@@ -231,7 +277,7 @@
         $b.removeClass();
         differences = visual._styleRuleDifferences(a, b);
         assert.deepEqual(differences, {
-            "background-color": ["rgb(238, 238, 238)", undefined]
+            "background-color": [hexToRgb("#eee"), undefined]
           },
           "Adding a rule to A which B doesn't have returns undefined for B"
         );
@@ -246,7 +292,7 @@
         assert.deepEqual(visual._findRulesFor(a), {
             "display": { "specificity": 1, "value": "block" },
             "font-weight": { "specificity": 1, "value": "400" },
-            "color": { "specificity": 1, "value": "rgb(0, 0, 0)" }
+            "color": { "specificity": 1, "value": browserColourFn("#000") }
           },
           "Checking against the element #foo retrieves all the .div styles"
         );
@@ -255,7 +301,7 @@
         assert.deepEqual(visual._findRulesFor(a), {
             "display": { "specificity": 1, "value": "block" },
             "font-weight": { "specificity": 1, "value": "400" },
-            "color": { "specificity": 1, "value": "rgb(0, 0, 0)" },
+            "color": { "specificity": 1, "value": browserColourFn("#000") },
             "position": { "specificity": 11, "value": "absolute" }
           },
           "Adding a class which matches a more specific rule gets picked up"
@@ -423,8 +469,8 @@
         $a.addClass("color");
 
         assert.deepEqual(visual.elemsDiffer(a, b), {
-            "a": { "color": "rgb(17, 17, 17)" },
-            "b": { "color": "rgb(0, 0, 0)" }
+            "a": { "color": browserColourFn("#111") },
+            "b": { "color": browserColourFn("#000") }
           },
           "Elements with different colours returns their differences"
         );
