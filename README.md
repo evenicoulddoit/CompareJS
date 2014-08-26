@@ -14,11 +14,11 @@ Compare.js should on pages with *few expected differences*. It's most obvious us
 
 Browser Compatibility*
 ---------------------
-* Chrome 33+ 
+* Chrome 33+
 * Firefox 28+ *(Performance issues)*
 * IE9+
 
-\* *Current esimates based on caniuse tables*
+\* *Based on tests passing & caniuse statistics*
 
 
 Usage
@@ -68,31 +68,42 @@ There may be cases where erroneous differences are reported. Examples include so
 ```
 
 
-Web Server Configuration
-------------------------
+Fixing Security Issues
+----------------------
 Utilising JavaScript's great DOM libraries, means that you can use any compatible browser to run your tests, rather than taking a server-side, headless-browser approach which might not yield as accurate results. However, with the browser comes frustrating limitations.
 
-Comparisons are made by loading 2 remotes sites within IFrames, and inspecting the result. In order to do this, we need to enable Cross-Origin Resource Sharing (CORS). The remote sites *must* both be descendants of compare.js *and* must set their domain property to compare.js (or another ServerName or your choice). Therefore you will have the following setup:
+Comparisons are made by loading 2 remotes sites within IFrames, and inspecting the result. In order to do this, we need to obey Cross-Origin Resource Sharing (CORS) policies, **or** tell our browser to ignore them.
 
-1) The tool itself hosted at http://compare.js
+* Instructing your browser to ignore CORS is the quickest approach, but **remember to turn it back on**. Here's how you can do it on Firefox (*Nix instructions):
 
-2) Your base website hosted at http://a.compare.js
+  1) Create a new profile, `firefox -ProfileManager`
+  
+  2) Start a new session with this profile, and visit `about:config`
+  
+  3) Set the property `security.fileuri.strict_origin_policy` to `false`
 
-3) Your new website hosted at http://b.compare.js
+* Obeying CORS is longest approach, but it'll mean you can run the comparison without tool without tweaking security policies.
+To do this, all sites *must* be descendants of one another *and* set their domain property to compare.js (or another ServerName or your choice). An example configuration might be:
 
-Both `a.compare.js` and `b.compare.js` will need to include the script:
-
-```HTML
-<script type="text/javascript">
-  try {
-    document.domain = "compare.js";
-  }
-  catch(e) {
-    console.error("Failed to set the domain to compare.js, please " +
-                  "check your Apache config");
-  }
-</script>
-```
+  1) Host the tool itself at http://compare.js
+  
+  2) Host your base site at http://a.compare.js
+  
+  3) Host your new site at http://b.compare.js
+  
+  Both `a.compare.js` and `b.compare.js` will need to include the script:
+  
+  ```HTML
+  <script type="text/javascript">
+    try {
+      document.domain = "compare.js";
+    }
+    catch(e) {
+      console.error("Failed to set the domain to compare.js, please " +
+                    "check your Apache config");
+    }
+  </script>
+  ```
 
 
 Contributing
