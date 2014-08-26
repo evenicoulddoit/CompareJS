@@ -4,7 +4,7 @@ define([], function() { "use strict";
   return {
 
     isNode: function(unknown) {
-      return (unknown || {}).hasOwnProperty("nodeType");
+      return (typeof (unknown || {}).nodeType === "number");
     },
 
     nodeType: function(node) {
