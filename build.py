@@ -70,7 +70,7 @@ def compile_html():
     """
     log("Compiling HTML", msg_type="title")
     index_out = os.path.join(BUILD_DIR, "index.html")
-    html = None
+    soup = None
 
     # 2.6 friendly
     with open(INDEX_HTML) as html_in:
@@ -80,8 +80,6 @@ def compile_html():
         js_tag = soup.find("script", id="app-js")
         js_tag["src"] = "js/compare.js"
         del js_tag["data-main"]
-
-        html = soup.prettify()
 
     with open(index_out, "w") as html_out:
         html_out.write(soup.prettify())
@@ -111,13 +109,16 @@ def run_js_tests():
     """
     log("Building & Running JS tests", msg_type="title")
 
-    os.remove(os.path.join(TEST_DIR, "index.html"))
+    try:
+        os.remove(os.path.join(TEST_DIR, "index.html"))
+    except OSError:
+        pass
 
     html = None
     scripts = find_js_tests()
     script_tpl = '<script src="{0}" type="text/javascript"></script>'
     scripts_html = "\n  ".join([script_tpl.format(script)
-                              for script in scripts])
+                                for script in scripts])
 
     with open(os.path.join(TEST_DIR, "index.tpl")) as html_in:
         html = html_in.read().replace("{{TESTS}}", scripts_html)
@@ -139,7 +140,7 @@ def msg_success():
     The message to log on successful build
     """
     log("")
-    log("\o/ BUILD COMPLETE \o/")
+    log("\\o/ BUILD COMPLETE \\o/")
 
 
 def msg_fail():
@@ -199,12 +200,12 @@ def find_js_tests():
             if doc.startswith("test_") and doc.endswith(".js")]
 
 
-def url_js_path(js):
+def url_js_path(script):
     """
     Given an absolute JavaScript test filepath, make it relative to the
     test directory, and convert all path separators to forward slashes
     """
-    return js[len(TEST_DIR) + 1:].replace(os.sep, "/")
+    return script[len(TEST_DIR) + 1:].replace(os.sep, "/")
 
 
 if __name__ == "__main__":
