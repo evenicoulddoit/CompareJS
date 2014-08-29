@@ -1,6 +1,9 @@
 #iframes {
   @include clearfix();
+  position: relative;
   margin-top: 40px;
+  margin-bottom: 40px;
+  height: calc(100vh - 450px);
 
   .stage-start & {
     display: none;
@@ -8,7 +11,6 @@
 }
 
 #response {
-  margin-top: 40px;
   padding-top: 40px;
   border-top: 1px solid rgba($color_copy, 0.1);
   @include single-transition(opacity, 1s, ease);

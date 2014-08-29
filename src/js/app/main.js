@@ -52,7 +52,8 @@ define(function(require) { "use strict";
         this.settingsDom = {
           toggle: document.getElementById("settings-toggle"),
           cacheBust: document.getElementById("settings-cache-bust"),
-          exclude: document.getElementById("settings-exclude")
+          exclude: document.getElementById("settings-exclude"),
+          zoom: document.getElementById("settings-zoom")
         };
 
         this.response = document.getElementById("response");
@@ -94,7 +95,9 @@ define(function(require) { "use strict";
         this.processSettings();
         this.toggleSettings(false);
         this.inBtn.className = "";
-        this.wrapper.setAttribute("class", "loading");
+        this.wrapper.classList.remove("stage-start");
+        this.wrapper.classList.remove("with-response");
+        this.wrapper.classList.add("loading");
         this.removeResponse();
 
         if(loadFrame === true) {
@@ -116,12 +119,13 @@ define(function(require) { "use strict";
 
       responseActive: function() {
         this.isResponseActive = true;
-        this.wrapper.setAttribute("class", "with-response");
+        this.wrapper.classList.add("with-response");
+        this.wrapper.classList.remove("loading");
       },
 
       responseInactive: function() {
         this.isResponseActive = false;
-        this.wrapper.removeAttribute("class");
+        this.wrapper.classList.remove("with-response");
       },
 
       doCompare: function(withTimeout, results) {
@@ -325,7 +329,7 @@ define(function(require) { "use strict";
       },
 
       compareFailed: function(response) {
-        this.wrapper.setAttribute("class", "with-response");
+        this.wrapper.classList.add("with-response");
         this.removeResponse();
         this.responseActive();
 
@@ -387,10 +391,25 @@ define(function(require) { "use strict";
         }
       },
 
+      setZoom: function() {
+        var self = this,
+            newVal = this.settingsDom.zoom.value;
+
+        ["50", "75", "100"].forEach(function(val) {
+          if(val === newVal) {
+            self.wrapper.classList.add("zoom-" + val);
+          }
+          else {
+            self.wrapper.classList.remove("zoom-" + val);
+          }
+        });
+      },
+
       loadInputState: function() {
         var val;
 
-        [this.inA, this.inB, this.settingsDom.exclude].forEach(function(input) {
+        [this.inA, this.inB,
+         this.settingsDom.exclude, this.settingsDom.zoom].forEach(function(input) {
           val = localStorage.getItem("saved-input" + input.id);
           if(val !== null) {
             input.value = val;
@@ -399,7 +418,8 @@ define(function(require) { "use strict";
       },
 
       saveInputState: function() {
-        [this.inA, this.inB, this.settingsDom.exclude].forEach(function(input) {
+        [this.inA, this.inB,
+         this.settingsDom.exclude,this.settingsDom.zoom].forEach(function(input) {
           localStorage.setItem("saved-input" + input.id, input.value);
         }, this);
       },
@@ -410,6 +430,7 @@ define(function(require) { "use strict";
         this.inA.addEventListener("keypress", this.processIfEnter.bind(this));
         this.inB.addEventListener("keypress", this.processIfEnter.bind(this));
         this.settingsDom.toggle.addEventListener("click", this.toggleSettings.bind(this));
+        this.settingsDom.zoom.addEventListener("click", this.setZoom.bind(this));
         setInterval(this.saveInputState.bind(this), 1000);
       }
     };

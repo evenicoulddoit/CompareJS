@@ -30,12 +30,29 @@ h2 {
 
 iframe {
   @include box-sizing(border-box);
+  position: absolute;
+  left: 52%;
   border: 1px solid lighten($color_copy, 50%);
   width: 48%;
-  height: 300px;
+  height: calc(100vh - 450px);
 
   &:first-child {
+    left: 0;
     margin-right: 4%;
+  }
+
+  .zoom-50 & {
+    @include transform(scale(0.5));
+    @include transform-origin(0, 0);
+    width: 96%;
+    height: calc(200vh - 900px);
+  }
+
+  .zoom-75 & {
+    @include transform(scale(0.75));
+    @include transform-origin(0, 0);
+    width: 64%;
+    height: calc(133.33vh - 600px);
   }
 }
 

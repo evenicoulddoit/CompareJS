@@ -1,9 +1,10 @@
 #wrapper {
-  width: 80vw;
+  width: 96vw;
   margin: 2vh auto 0;
-  @include single-transition(margin-top, 1s, ease);
+  @include single-transition(all, 1s, ease);
 
   &.stage-start {
     margin-top: 20vh;
+    width: 80vw;
   }
 }
