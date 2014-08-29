@@ -24,7 +24,7 @@ define(function(require) { "use strict";
     }
 
     function cacheBust(url) {
-      var delimiter = url.indexOf("?") != 1 ? "?" : "&";
+      var delimiter = url.indexOf("?") === -1 ? "?" : "&";
       return url + delimiter + "_cachebust=" + Date.now();
     }
 
