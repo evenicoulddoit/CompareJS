@@ -72,7 +72,7 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
      * Parse the list of elements / changes to exclude 
      */
     parseExclusions: function() {
-      var length, i, exclude, attrs, attr;
+      var length, i, exclude, match, ignore, attrs, attr;
 
       this.excludeCompletely = [];
       this.excludeChanges = [];
@@ -80,19 +80,31 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
       if(this.opts.exclude instanceof Array) {
         length = this.opts.exclude.length;
 
-        exclusions:
         for(i = 0; i < length; i++) {
           exclude = this.opts.exclude[i];
+          match = exclude.match;
+          ignore = exclude.ignore;
 
-          if(typeof exclude.tag === "string" || exclude.attributes instanceof Array) {
-            if(typeof exclude.tag === "string") exclude.tag = exclude.tag.toUpperCase();
-            if(!exclude.hasOwnProperty("method") || exclude.method === "all") {
+          if(match) {
+
+            // Force uppercase tagName to match element property
+            if(typeof match.tag === "string") match.tag = match.tag.toUpperCase();
+
+            // If what to ignore is not specified or explicitly set to all
+            // We add the exclusion to the "ignore completely" list
+            if(!ignore || ignore === "*") {
               this.excludeCompletely.push(exclude);
             }
+
+            // If the element contains certain things to ignore, we parse any
+            // regular expressions, and add the exclusion to the "exclude changes" list
             else {
-              attrs = exclude.method.attr;
-              if(typeof attrs == "object") {
+              attrs = ignore.attributes;
+              if(typeof attrs === "object") {
                 for(attr in attrs) {
+
+                  // We can either ignore certain attributes altogether, or
+                  // provide a regular expression of what to ignore
                   if(attrs[attr] !== "*") {
                     try {
                       attrs[attr] = new RegExp(attrs[attr], "i");
@@ -224,11 +236,10 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
         match = this._findMatch(elem, imbalancesB);
         if(match) {
 
-          // Report all non-exact matches
-          if(["attr", "tag", "text"].indexOf(match.type) !== -1) {
-            if(this.shouldReportChange(elem, match)) {
-              this._difference(match.type, elem, match.elem);
-            }
+          // Report all non-exact matches which aren't in exclusions list
+          if(match.type !== "identical" &&
+             !traverse.exclusionMatch(elem, this.excludeChanges, match.elem)) {
+            this._difference(match.type, elem, match.elem);
           }
 
           // We're guessing that these elements are the same, equate their signatures
@@ -256,7 +267,8 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
      * fail to find a match, we return null.
      * @param  {Element} elemA - The element to find a match for
      * @param  {Array} sigsB - The list of imbalanced elements
-     * @return {[type]}       [description]
+     * @return {Object} - A match object containing the matching element and
+     *                    the type of match.
      */
     _findMatch: function(elemA, elemsB) {
       var matches = [],
@@ -312,69 +324,6 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
       }
 
       return null;
-    },
-
-    /**
-     * Decide whether we should report a text/attribute/tag change given the
-     * list of exclusions set
-     */
-    shouldReportChange: function(elem, match) {
-      var rule = traverse.onExclusionList(elem, this.excludeChanges);
-
-      // If we can't find a rule for the element, or it's change isn't excluded
-      if(!rule || !rule.method.hasOwnProperty(match.type)) return true;
-
-      // If we're permitted to change attributes, check that only those ones have
-      if(match.type == "attr") {
-        return !this.attrChangesMatch(elem, match.elem, rule.method.attr);
-      }
-    },
-
-    attrChangesMatch: function(elemA, elemB, exclude) {
-      var checked = [],
-          length = elemA.attributes.length,
-          attr, i, attrA, attrB, exclusion, strippedA, strippedB;
-
-      // Check that each A attribute is either equal to B or is excluded
-      for(i = 0; i < length; i++) {
-        attr = elemA.attributes[i].name;
-        attrA = elemA.getAttribute(attr);
-        attrB = elemB.getAttribute(attr);
-        checked.push(attr);
-
-        // We've got an attibute change
-        if(attrA !== attrB) {
-          exclusion = exclude[attr];
-
-          // It's not on our exclusion list
-          if(exclusion === undefined) {
-            return false;
-          }
-
-          // It's on our exclusion list, but the exclusion is a regex, and
-          // when we remove the matched groups, they're still not equal
-          else if(exclusion instanceof RegExp) {
-            strippedA = regexp.removeMatchGroups(attrA, exclusion);
-            strippedB = regexp.removeMatchGroups(attrB, exclusion);
-
-            if(strippedA !== strippedB) {
-              return false;
-            }
-          }
-        }
-      }
-
-      length = elemB.attributes.length;
-
-      // Check that any added B attributes are excluded
-      for(i = 0; i < length; i++) {
-        attr = elemB.attributes[i].name;
-        if(checked.indexOf(attr) == -1 && exclude.indexOf(attr) == -1) {
-          return false;
-        }
-      }
-
-      return true;
     },
 
     /**

@@ -1,4 +1,4 @@
-define(["dom/common"], function(DOM) { "use strict";
+define(["dom/common", "regexp"], function(DOM, regexp) { "use strict";
 
   function goForward(opts) {
     var last = opts.last, forward;
@@ -55,6 +55,65 @@ define(["dom/common"], function(DOM) { "use strict";
     return null;
   }
 
+  /**
+   * Decide whether two elements' attributes have any differences other than
+   * the ones explicitly marked as "to ignore".
+   * @param  {Element} elemA
+   * @param  {Element} elemB
+   * @param  {Object} toIgnore - A list of attributes to ignore
+   * @return {Boolean} - Whether, any attributes not explicitly marked have changed.
+   */
+  function attrsDiffer(elemA, elemB, toIgnore) {
+    var checked = [],
+        length = elemA.attributes.length,
+        attrName, i, attrA, attrB, ignore, strippedA, strippedB;
+
+    // Check that each A attribute is either equal to B or is excluded
+    for(i = 0; i < length; i++) {
+      attrName = elemA.attributes[i].name;
+      attrA = elemA.getAttribute(attrName);
+      attrB = elemB.getAttribute(attrName);
+      checked.push(attrName);
+
+      // We've got an attibute change
+      if(attrA !== attrB) {
+        ignore = toIgnore[attrName];
+
+        // It's not on our exclusion list
+        if(ignore === undefined) {
+          return true;
+        }
+
+        // It's on our exclusion list, but the exclusion is a regex, and
+        // when we remove the matched groups, they're still not equal
+        else if(ignore instanceof RegExp) {
+          strippedA = regexp.removeMatchGroups(attrA, ignore);
+          strippedB = regexp.removeMatchGroups(attrB, ignore);
+
+          // If, after removing the match groups, the elements are not equal, 
+          if(strippedA !== strippedB) {
+            return true;
+          }
+        }
+      }
+    }
+
+    length = elemB.attributes.length;
+
+    // Check that any added B attributes are excluded
+    for(i = 0; i < length; i++) {
+      attrName = elemB.attributes[i].name;
+
+      // We've found an attribute of B which A didn't have - if it's not
+      // marked as an attribute we should ignore completely, return false
+      if(checked.indexOf(attrName) == -1 && toIgnore[attrName] !== "*") {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   var exports = {
     /**
      * Get the next node given the previous.
@@ -77,7 +136,7 @@ define(["dom/common"], function(DOM) { "use strict";
 
       if(forward !== null && DOM.nodeType(forward) == "element" && 
          opts.exclude &&
-         this.onExclusionList(forward, opts.exclude)) {
+         this.exclusionMatch(forward, opts.exclude)) {
         opts.no_down = true;
         opts.last = forward;
         return this.forward(opts);
@@ -113,37 +172,55 @@ define(["dom/common"], function(DOM) { "use strict";
     },
 
     /**
-     * Return whether an element matches any of the provided list of exclusions
+     * Return whether an element matches any of the provided list of exclusions.
+     * If another element is provided, then all of the differences been the
+     * elements must also match those marked as "to ignore" in an exclusion
      * @param  {Element} elem
      * @param  {Array} list - The list of exclusion objects
-     * @return {Boolean} - Whether the element is on the exclusion list or not
+     * @param  {Element} [otherElem] - Another element to compare ignored changes against
+     * @return {Boolean} - Whether the element should be excluded or not
      */
-    onExclusionList: function(elem, list) {
-      var exclude_length = list.length,
-          exclude, i, attr;
+    exclusionMatch: function(elem, exclusions, otherElem) {
+      var excludeCount = exclusions.length,
+          exclude, match, ignore, i, attr;
 
       outer:
-      for(i = 0; i < exclude_length; i++) {
-        exclude = list[i];
+      for(i = 0; i < excludeCount; i++) {
+        exclude = exclusions[i];
+        match = exclude.match;
+        ignore = exclude.ignore;
 
+        // If this exclusion is an element and an exact match, exclude.
         if(DOM.isNode(exclude) && DOM.nodeType(exclude) === "element") {
           if(exclude === elem) {
-            return exclude;
+            return true;
           }
           else {
             continue;
           }
         }
 
-        if(exclude.hasOwnProperty("tag") && exclude.tag !== elem.tagName) {
+        // If match lists a tag name which doesn't match the current element, ignore.
+        if(match.hasOwnProperty("tag") && match.tag !== elem.tagName) {
           continue;
         }
 
-        if(exclude.hasOwnProperty("attributes")) {
-          for(attr in exclude.attributes) {
-            if(exclude.attributes[attr] !== elem.getAttribute(attr)) {
+        // If match lists attributes 
+        if(match.hasOwnProperty("attributes")) {
+          for(attr in match.attributes) {
+            if(match.attributes[attr] !== elem.getAttribute(attr)) {
               continue outer;
             }
+          }
+        }
+
+        // If this exclusion lists certain aspects to ignore, and we have a
+        // second element to compare against, we calculate if the only
+        // differences between the elements are those which we should ignore.
+        if(typeof ignore === "object" && otherElem) {
+          if(typeof ignore.attributes === "object" &&
+             attrsDiffer(elem, otherElem, ignore.attributes)) {
+            continue;
           }
         }
         return true;
@@ -158,6 +235,7 @@ define(["dom/common"], function(DOM) { "use strict";
   exports._nextElement = nextElement;
   exports._getFirstChild = getFirstChild;
   exports._getLastChild = getLastChild;
+  exports._attrsDiffer = attrsDiffer;
   //>>includeEnd("test")
 
   return exports;

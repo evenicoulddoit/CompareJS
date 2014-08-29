@@ -29,38 +29,45 @@ Exclusions
 ----------
 There may be cases where erroneous differences are reported. Examples include social network APIs adding elements with differing IDs to the page, and Cross-site request forgery (CSRF) tokens. To prevent these being reported, you can add an exclusions JSON block from the menu. These rules can instruct Compare.js to either ignore changes to a certain attribute of an element, or to skip and element and it's children entirely. Some examples include:
 
-* Ignore CSRF tokens in Django
+
+* Ignoring IFrames *completely*
 
 ```JSON
 {
-  "tag": "input",
-  "attributes": {
-    "name": "csrfmiddlewaretoken",
-    "type": "hidden"
+  "match": {
+    "tag": "iframe"
+  }
+}
+```
+
+* Ignore *the value* of CSRF tokens in Django
+
+```JSON
+{
+  "match": {
+    "tag": "input",
+    "attributes": {
+      "name": "csrfmiddlewaretoken",
+      "type": "hidden"
+    }
   },
-  "method": {
-    "attr": {
+  "ignore": {
+    "attributes": {
       "value": "*"
     }
   }
 }
 ```
     
-* Ignoring all IFrames
+* Ignoring *the cache-busting section* from an image tags *src* attribute 
 
 ```JSON
 {
-  "tag": "iframe"
-}
-```
-    
-* Ignoring a unique cache-busting number appended to an image URL
-
-```JSON
-{
-  "tag": "img",
-  "method": {
-    "attr": {
+  "match": {
+    "tag": "img"
+  },
+  "ignore": {
+    "attributes": {
       "src": "[\\w/-_+]+(\\.\\d+)\\.(?:jpe?g|png|gif)"
     }
   }

@@ -8,7 +8,7 @@
         setup: function() {
           $("body").append(
             "<div id=\"test-container\"> " +
-              "<div id=\"foo\" class=\"bar\"> " +
+              "<div id=\"foo\"> " +
                 "before " +
                 "<span id=\"zulu\"></span> " +
                 "after " +
@@ -103,6 +103,48 @@
       });
 
 
+      QUnit.test("_attrsDiffer()" +
+        "Identifies differences between elements attributes", function(assert) {
+
+        var $foo = $("#foo"),
+            foo = $foo.get(0),
+            bar = document.getElementById("bar"),
+            toIgnore = {};
+
+        assert.strictEqual(traversal._attrsDiffer(foo, foo, toIgnore), false,
+          "When comparing an element with itself, no differences are reported"
+        );
+
+        assert.strictEqual(traversal._attrsDiffer(foo, bar, toIgnore), true,
+          "Elements with different attributes are identified"
+        );
+
+        toIgnore = {
+          "id": "*", 
+        };
+
+        assert.strictEqual(traversal._attrsDiffer(foo, bar, toIgnore), false,
+          "When ignoring an attribute difference, no differences are reported"
+        );
+
+        toIgnore = {
+          "id": /nomatch/
+        };
+
+        assert.strictEqual(traversal._attrsDiffer(foo, bar, toIgnore), true,
+          "RegExp differences which don't match result in differences reported"
+        );
+
+        toIgnore = {
+          "id": /(foo|bar)/
+        };
+
+        assert.strictEqual(traversal._attrsDiffer(foo, bar, toIgnore), false,
+          "RegExp differences which do match result in no differences reported"
+        );
+      });
+
+
       QUnit.test("forward() " +
         "Gets the next element, ignoring exclusions.", function(assert) {
         var $foo = $("#foo"),
@@ -129,7 +171,7 @@
           no_down: false,
           all: false,
           exclude: [
-            { tag: "SPAN" }
+            { match: { tag: "SPAN"  }}
           ]
         };
 
@@ -143,7 +185,7 @@
           no_down: false,
           all: false,
           exclude: [
-            { attributes: { "id": "zulu" }}
+            { match: { attributes: { "id": "zulu" }} }
           ]
         };
 
@@ -157,7 +199,7 @@
           no_down: false,
           all: false,
           exclude: [
-            { attributes: { "id": "zulu", "class": "something-else" }}
+            { match: { attributes: { "id": "zulu", "class": "something-else" }}}
           ]
         };
 
@@ -171,9 +213,11 @@
           no_down: false,
           all: false,
           exclude: [
-            { 
-              tag: "SPAN",
-              attributes: { "id": "zulu" }
+            {
+              match: {
+                tag: "SPAN",
+                attributes: { "id": "zulu" }
+              }
             }
           ]
         };
@@ -184,37 +228,91 @@
       });
 
 
-      QUnit.test("onExclusionList() " +
-        "Gets the next element, ignoring exclusions.", function(assert) {
-        var foo = $("#foo").get(0);
+      QUnit.test("exclusionMatch() " +
+        "Determines if an element matches a list of exclusions.", function(assert) {
+        var $foo = $("#foo"),
+            foo = $foo.get(0),
+            $bar = $("#bar"),
+            bar = $bar.get(0),
+            exclusions = [];
 
-        assert.strictEqual(traversal.onExclusionList(foo, [
-            { tag: "DIV" }
-          ]),
-          true,
+
+        exclusions = [
+          { match: { tag: "DIV" }}
+        ];
+
+        assert.strictEqual(traversal.exclusionMatch(foo, exclusions), true,
           "A div is correctly identified as on an exclusion list"
         );
 
-        assert.strictEqual(traversal.onExclusionList(foo, [
-            { attributes: { "id": "foo" }}
-          ]),
-          true,
+        exclusions = [
+          { match: { attributes: { "id": "foo" }}}
+        ];
+
+        assert.strictEqual(traversal.exclusionMatch(foo, exclusions), true,
           "An element is correctly identified as excluded by attribute"
         );
 
-        assert.strictEqual(traversal.onExclusionList(foo, [
-            { attributes: { "id": "bar" }},
-            { attributes: { "id": "foo" }}
-          ]),
-          true,
+        exclusions = [
+          { match: { attributes: { "id": "bar" }}},
+          { match: { attributes: { "id": "foo" }}}
+        ];
+
+        assert.strictEqual(traversal.exclusionMatch(foo, exclusions), true,
           "Identifies an exclusion when match is not the first"
         );
 
-        assert.strictEqual(traversal.onExclusionList(foo, [
-            { attributes: { "id": "bar" }},
-          ]),
-          false,
+        exclusions = [
+          { match: { attributes: { "id": "bar" }}},
+        ];
+
+        assert.strictEqual(traversal.exclusionMatch(foo, exclusions), false,
           "Non-matching exclusions return false"
+        );
+
+        exclusions = [{
+          match: {
+            tag: "DIV"
+          },
+          ignore: {
+            attributes: {
+              "id": /(shouldntmatter)/
+            }
+          }
+        }];
+
+        assert.strictEqual(traversal.exclusionMatch(foo, exclusions, foo), true,
+          "Second identical element, if match exists, ignores irrelevant, returns true"
+        );
+
+        exclusions = [{
+          match: {
+            tag: "DIV"
+          },
+          ignore: {
+            attributes: {
+              "class": "*"
+            }
+          }
+        }];
+
+        assert.strictEqual(traversal.exclusionMatch(foo, exclusions, bar), false,
+          "Second element, and differences between non-ignored attributes, returns false"
+        );
+
+        exclusions = [{
+          match: {
+            tag: "DIV"
+          },
+          ignore: {
+            attributes: {
+              "id": "*"
+            }
+          }
+        }];
+
+        assert.strictEqual(traversal.exclusionMatch(foo, exclusions, bar), true,
+          "Second element, no differences between non-ignored attributes, returns true"
         );
       });
 
