@@ -16,9 +16,11 @@ BUILD_DIR = os.path.join(BASE_DIR, "dist")
 CONFIG_HOME = os.path.join(BASE_DIR, "build-config")
 SASS_CONFIG_FILE = os.path.join(CONFIG_HOME, "sass-config.rb")
 JS_CONFIG_FILE = os.path.join(CONFIG_HOME, "require-config.js")
+JS_NON_AMD = ("classlist.js", )
 
 INDEX_HTML = os.path.join(SRC_DIR, "index.html")
-JSHINT_IGNORE = ("require.js", "almond.js", "promise.js", "specificity.js")
+JSHINT_IGNORE = ("require.js", "almond.js", "promise.js", "specificity.js",
+                 "classlist.js")
 
 IS_WINDOWS = os.name == "nt"
 
@@ -57,10 +59,18 @@ def compile_compass():
 def compile_js():
     """
     Compile the JavaScript AMD source files into a single uglified file.
+    Copy non-AMD files over to the build 
     """
-    log("Compiling RequireJS files", msg_type="title")
+    log("Compiling JS files", msg_type="title")
     r_js = "r.js.cmd" if IS_WINDOWS else "r.js"
     call(r_js, "-o", JS_CONFIG_FILE)
+    os.mkdir(os.path.join(BUILD_DIR, "js", "lib"))
+
+    for script in JS_NON_AMD:
+        log("Copying {0}".format(script))
+        shutil.copyfile(os.path.join(JS_DIR, "lib", script),
+                        os.path.join(BUILD_DIR, "js", "lib", script))
+
     log("OK", msg_type="response")
 
 
@@ -104,7 +114,7 @@ def jshint_files():
 
 def run_js_tests():
     """
-    Copy the test directory into the build one, find all the test suites,
+    Create an index.html file from a template, find all the test suites,
     and modify the Qunit HTML page to include all of them.
     """
     log("Building & Running JS tests", msg_type="title")

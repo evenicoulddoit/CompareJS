@@ -46,6 +46,7 @@ iframe {
     @include transform-origin(0, 0);
     width: 96%;
     height: calc(200vh - 900px);
+    border-width: 2px;
   }
 
   .zoom-75 & {

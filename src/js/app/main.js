@@ -47,7 +47,6 @@ define(function(require) { "use strict";
         this.startOverBtn = document.getElementById("do-start-over");
         this.inBtn = document.getElementById("do-compare");
 
-
         // Settings
         this.settingsDom = {
           toggle: document.getElementById("settings-toggle"),
@@ -415,6 +414,8 @@ define(function(require) { "use strict";
             input.value = val;
           }
         }, this);
+
+        this.setZoom();
       },
 
       saveInputState: function() {
