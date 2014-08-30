@@ -207,6 +207,8 @@ define(function(require) { "use strict";
             differences = document.createElement("ul"),
             aspect, reports, li, count, i;
 
+        this.wrapper.classList.remove("loading");
+
         for(aspect in aspects) {
           reports = aspects[aspect];
           count = reports.length;
@@ -228,6 +230,7 @@ define(function(require) { "use strict";
       },
 
       differencesFalse: function() {
+        this.wrapper.classList.remove("loading");
         this.response.setAttribute("class", "identical");
         this.responseIcon.setAttribute("class", "fa fa-check-circle");
         this.responseSummary.innerHTML = "Pages are identical";
