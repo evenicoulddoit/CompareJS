@@ -164,7 +164,7 @@ define(function(require) { "use strict";
        * @param  {Object|undefined} resp - Either the previous async response or undefined
        */
       _asyncVisual: function(async) {
-        var that = this, differences, difference;
+        var that = this;
 
         if(async !== undefined && async.calls > 2000) {
           this.compareFailed("Recursion Error");
@@ -185,16 +185,12 @@ define(function(require) { "use strict";
             }, 0);
           }
           else {
-            differences = that.compare.differences;
-            that.responseActive();
-
-            for(difference in differences) {
-              if(differences[difference].length !== 0) {
-                return that.differencesTrue(differences);
-              }
+            if(that.compare.differenceCount === 0) {
+              return that.differencesFalse();
             }
-
-            return that.differencesFalse();
+            else {
+              return that.differencesTrue(that.compare.differences);
+            }
           }
         }
       },
@@ -275,7 +271,7 @@ define(function(require) { "use strict";
           case "added":
             return "Element added" +
                    "<code class=\"b\">" +
-                     htmlEntities(report[0]._originalSig) +
+                     htmlEntities(report[1]._originalSig) +
                    "</code>";
 
           case "text":

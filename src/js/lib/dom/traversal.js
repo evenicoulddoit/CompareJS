@@ -115,6 +115,7 @@ define(["dom/common", "regexp"], function(DOM, regexp) { "use strict";
   }
 
   var exports = {
+
     /**
      * Get the next node given the previous.
      * Stop if we bubble back up to the initial parent.

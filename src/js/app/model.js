@@ -13,13 +13,6 @@ define(["types",
 
 function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
 
-  var DEBUGGING = false,
-      log = window.console.log.bind(window.console);
-
-  if(!DEBUGGING) {
-    log = function() {};
-  }
-
   /**
    * @constructor
    * @param {Element} a
@@ -132,18 +125,20 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
       ["a", "b"].forEach(function(tree) {
         i = 0;
         list = this["elems" + tree.toUpperCase()] = [];
-        next = traverse.forward({
-          stop: this[tree],
-          exclude: this.excludeCompletely
-        });
+        next = this[tree];
 
         while(next) {
           signature = DOM.signature(next);
+
+          if(next._difference) {
+            delete next._difference;
+          }
+
           this.addToMap(next, tree);
           list.push(next);
           next._index = i;
           next = traverse.forward({
-            last: next,
+            last: i === 0 ? undefined : next,
             stop: this[tree],
             exclude: this.excludeCompletely
           });
@@ -152,15 +147,17 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
 
         this["total" + tree.toUpperCase()] = i;
       }, this);
+
     },
 
     /**
      * Find elements which have moved by traversing both node lists
+     * TODO: refactor
      */
     _findMovements: function() {
       var missingA = {}, missingB = {},
           indexA = 0, indexB = 0,
-          nextA, nextB, sigA, sigB;
+          nextA, nextB, sigA, sigB, followedA, followedB;
 
       while(true) {
         nextA = this.elemsA[indexA];
@@ -171,28 +168,56 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
         sigA = nextA ? nextA._sig : "";
         sigB = nextB ? nextB._sig : "";
 
+        // A and B are identical, keep looking
         if(sigA == sigB) {
           indexA ++;
           indexB ++;
         }
 
         else {
-          if((sigA in missingA) || (sigB in missingB)) {
+
+          // If either of A or B have been marked as added / removed, ignore
+          if(nextA && nextA._difference === "removed") {
+            indexA ++;
+          }
+          else if(nextB && nextB._difference === "added") {
+            indexB ++;
+          }
+
+          // One of the mismatched elements has been seen before
+          else if((sigA in missingA) || (sigB in missingB)) {
+
+            // If the A element has been seen before, remove it from the list
             if(sigA in missingA) {
-              this._difference("moved", nextA, missingA[sigA]);
+              followedA = (this.elemsA[indexB + 1] || {})._sig;
+              followedB = (this.elemsB[missingA[sigA].index + 1] || {})._sig;
+
+              // If element following A has changed, report A as having moved
+              if(followedA !== followedB) {
+                this._difference("moved", nextA, missingA[sigA].elem);
+              }
               delete missingA[sigA];
               indexA ++;
             }
 
+            // If the B element has been seen before, remove it from the list
             if(sigB in missingB) {
-              this._difference("moved", missingB[sigB], nextB);
+              followedA = (this.elemsA[missingB[sigB].index + 1] || {})._sig;
+              followedB = (this.elemsB[indexA + 1] || {})._sig;
+
+              // If element following B has changed, report B as having moved
+              if(followedA !== followedB) {
+                this._difference("moved", missingB[sigB].elem, nextB);
+              }
               delete missingB[sigB];
               indexB ++;
             }
           }
+
+          // We haven't seen either of these elements yet, store for later
           else {
-            missingA[sigB] = nextB;
-            missingB[sigA] = nextA;
+            missingA[sigB] = { index: indexB, elem: nextB };
+            missingB[sigA] = { index: indexA, elem: nextA };
             indexA ++;
             indexB ++;
           }
@@ -248,12 +273,12 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
           imbalancesB.splice(imbalancesB.indexOf(match.elem), 1);
         }
         else {
-          this._difference("removed", elem);
+          this._difference("removed", elem, undefined);
           this.excludeCompletely.push(elem);
         }
       }
       for(i = 0; i < imbalancesB.length; i ++) {
-        this._difference("added", imbalancesB[i]);
+        this._difference("added", undefined, imbalancesB[i]);
         this.excludeCompletely.push(elem);
       }
     },
@@ -479,12 +504,15 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
     /**
      * Log an error
      * @param {string} type - The type of error reported
-     * @param {Node} nodeA
-     * @param {Node} nodeB
+     * @param {Node} [nodeA]
+     * @param {Node} [nodeB]
      */
     _difference: function(type, elemA, elemB) {
       this.differenceCount ++;
       this.differences[type].push([elemA, elemB]);
+
+      if(elemA !== undefined) elemA._difference = type;
+      if(elemB !== undefined) elemB._difference = type;
 
       if(this.differenceCount >= this.MAX_DIFFERENCES) {
         this.stoppedAtMax = true;

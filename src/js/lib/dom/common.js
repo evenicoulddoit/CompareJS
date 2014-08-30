@@ -1,5 +1,6 @@
 define([], function() { "use strict";
-  var MULTI_SPACE_REGEX = /\s{2,}/g;
+  var MULTI_SPACE_REGEX = /\s{2,}/g,
+      IGNORE_ATTRIBUTE_SPACES = ["class"];
 
   return {
 
@@ -61,10 +62,27 @@ define([], function() { "use strict";
 
       for(i = 0; i < length; i++) {
         attr = attrKeys[i];
-        attrStr += " " + attr + "=\"" + elem.attributes.getNamedItem(attr).value + "\"";
+        attrStr += " " + attr + "=\"" + this.attrValue(elem, attr) + "\"";
       }
 
       return attrStr;
+    },
+
+    /**
+     * Retrieve the value of a specified attribute for a given element.
+     * If spaces are marked as unimportant for this attribute, trim them.
+     * @param  {Element} elem
+     * @param  {String} attr - The name of the attribute to retrieve
+     * @return {String} The value of the attribute
+     */
+    attrValue: function(elem, attr) {
+      var val = elem.getAttribute(attr);
+
+      if(IGNORE_ATTRIBUTE_SPACES.indexOf(attr) !== -1) {
+        val = val.trim().replace(MULTI_SPACE_REGEX, " ");
+      }
+
+      return val;
     },
 
     /**
