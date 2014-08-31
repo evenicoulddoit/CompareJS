@@ -173,6 +173,15 @@ define(["dom/common", "regexp"], function(DOM, regexp) { "use strict";
     },
 
     /**
+     * Return either the next element sibling, or if none exist, the parent element
+     * @param  {Element} elem - The element to find relative for
+     * @return {Element} Either the next sibling or parent
+     */
+    nextOrParent: function(elem) {
+      return elem.nextElementSibling || elem.parentElement;
+    },
+
+    /**
      * Return whether an element matches any of the provided list of exclusions.
      * If another element is provided, then all of the differences been the
      * elements must also match those marked as "to ignore" in an exclusion

@@ -151,12 +151,13 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
     },
 
     /**
-     * Find elements which have moved by traversing both node lists
+     * Find elements which have moved by traversing both node lists.
+     * Ignore the root node.
      * TODO: refactor
      */
     _findMovements: function() {
-      var missingA = {}, missingB = {},
-          indexA = 0, indexB = 0,
+      var movements = [], missingA = {}, missingB = {},
+          indexA = 1, indexB = 1,
           nextA, nextB, sigA, sigB, followedA, followedB;
 
       while(true) {
@@ -189,12 +190,13 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
 
             // If the A element has been seen before, remove it from the list
             if(sigA in missingA) {
-              followedA = (this.elemsA[indexB + 1] || {})._sig;
-              followedB = (this.elemsB[missingA[sigA].index + 1] || {})._sig;
+              followedA = traverse.nextOrParent(nextA)._sig;
+              followedB = traverse.nextOrParent(missingA[sigA])._sig;
 
               // If element following A has changed, report A as having moved
-              if(followedA !== followedB) {
-                this._difference("moved", nextA, missingA[sigA].elem);
+              if(followedA !== followedB && movements.indexOf(followedB) === -1) {
+                movements.push(sigA);
+                this._difference("moved", nextA, missingA[sigA]);
               }
               delete missingA[sigA];
               indexA ++;
@@ -202,12 +204,13 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
 
             // If the B element has been seen before, remove it from the list
             if(sigB in missingB) {
-              followedA = (this.elemsA[missingB[sigB].index + 1] || {})._sig;
-              followedB = (this.elemsB[indexA + 1] || {})._sig;
+              followedA = traverse.nextOrParent(missingB[sigB])._sig;
+              followedB = traverse.nextOrParent(nextB)._sig;
 
               // If element following B has changed, report B as having moved
-              if(followedA !== followedB) {
-                this._difference("moved", missingB[sigB].elem, nextB);
+              if(followedA !== followedB && movements.indexOf(followedA) === -1) {
+                movements.push(sigB);
+                this._difference("moved", missingB[sigB], nextB);
               }
               delete missingB[sigB];
               indexB ++;
@@ -216,8 +219,8 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
 
           // We haven't seen either of these elements yet, store for later
           else {
-            missingA[sigB] = { index: indexB, elem: nextB };
-            missingB[sigA] = { index: indexA, elem: nextA };
+            missingA[sigB] = nextB;
+            missingB[sigA] = nextA;
             indexA ++;
             indexB ++;
           }

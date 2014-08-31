@@ -13,7 +13,10 @@
                 "<span id=\"zulu\"></span> " +
                 "after " +
               "</div> " +
-              "<div id=\"bar\"></div>" +
+              "<div id=\"bar\">" +
+                "<strong class=\"s-1\"></strong>" +
+                "<strong class=\"s-2\"></strong>" +
+              "</div>" +
             "</div>"
           );
         },
@@ -91,7 +94,7 @@
         );
 
         opts = {
-          last: bar,
+          last: $(".s-2", container).get(0),
           stop: container,
           no_down: false,
           all: false
@@ -225,6 +228,22 @@
         assert.strictEqual(traversal.forward(opts), bar,
           "Exclusions can be a combination of tag names and attributes"
         );
+      });
+
+
+      QUnit.test("nextOrParent() " +
+        "Get either the next element sibling, or parent.", function(assert) {
+
+        assert.strictEqual(traversal.nextOrParent($(".s-1", "#test-container").get(0)),
+          $(".s-2", "#test-container").get(0),
+          "When a sibling is available, returns it"
+        );
+
+        assert.strictEqual(traversal.nextOrParent($("#zulu").get(0)),
+          $("#foo").get(0),
+          "When no siblings are available, returns the parent"
+        );
+
       });
 
 

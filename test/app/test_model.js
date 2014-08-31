@@ -4,21 +4,39 @@
   require(["config"], function() {
     require(["app/model"], function(Compare) {
 
+      var $a, a, $b, b, compare;
+
       QUnit.module("app/model", {
         setup: function() {
           var $container = $(
-            "<div class='test-container'> " +
-              "<span>span</span>" +
-              "<a href=\"url\">" +
-                "<img src=\"image\" alt=\"sample image\" />" +
-              "</a>" +
-              "<pre> spaces important </pre> " +
-              "<strong title=\"important\">bold</strong>" +
-              "<em></em>" +
+            "<div id=\"container-a\" class=\"test-container\">" +
+              "<div class=\"body\"> " +
+                "<span>span</span>" +
+                "<a href=\"url\">" +
+                  "<img src=\"image\" alt=\"sample image\" />" +
+                "</a>" +
+                "<div class=\"container-1\">" +
+                  "<pre> spaces important </pre> " +
+                "</div>" +
+                "<div class=\"container-2\">" +
+                  "<strong title=\"important\">bold</strong>" +
+                "</div>" +
+                "<div class=\"container-3\">" +
+                  "<u class=\"take-note\">underlined</u>" +
+                "</div>" +
+                "<em></em>" +
+              "</div>" +
             "</div>"
           );
 
-          $("body").append($container).append($container.clone());
+          $("body").append($container);
+          $("body").append($container.clone().attr("id", "container-b"));
+
+          // All tests have access to the A and B variables
+          $a = $(".body", "#container-a");
+          a = $a.get(0);
+          $b = $(".body", "#container-b");
+          b = $b.get(0);
         },
         teardown: function() {
           $(".test-container").remove();
@@ -28,13 +46,9 @@
 
       QUnit.test("Compare() " +
         "Reports no differences when identical DOMs are compared", function(assert) {
-        var $a = $(".test-container").eq(0),
-            $b = $(".test-container").eq(1),
-            compare;
-
         compare = new Compare({
-          a: $a.get(0),
-          b: $a.get(0)
+          a: a,
+          b: a
         });
 
         assert.equal(compare.differenceCount, 0,
@@ -42,8 +56,8 @@
         );
 
         compare = new Compare({
-          a: $a.get(0),
-          b: $b.get(0)
+          a: a,
+          b: b
         });
 
         assert.equal(compare.differenceCount, 0,
@@ -54,12 +68,6 @@
 
       QUnit.test("Compare() " +
         "Reports when elements are removed / added from the DOM", function(assert) {
-        var $a = $(".test-container").eq(0),
-            a = $a.get(0),
-            $b = $(".test-container").eq(1),
-            b = $b.get(0),
-            compare;
-
         $("span", $a).remove();
 
         compare = new Compare({
@@ -98,12 +106,6 @@
 
       QUnit.test("Compare() " +
         "Reports when attributes are added / removed", function(assert) {
-        var $a = $(".test-container").eq(0),
-            a = $a.get(0),
-            $b = $(".test-container").eq(1),
-            b = $b.get(0),
-            compare;
-
         $("img", $b).replaceWith("<img alt=\"sample image\" \n src=\"image\" />");
 
         compare = new Compare({
@@ -160,11 +162,6 @@
 
       QUnit.test("Compare() " +
         "Reports when element tag names change", function(assert) {
-        var $a = $(".test-container").eq(0),
-            a = $a.get(0),
-            $b = $(".test-container").eq(1),
-            b = $b.get(0), compare;
-
         $("span", $b).replaceWith("<div>span</div>");
 
         compare = new Compare({
@@ -186,11 +183,6 @@
 
       QUnit.test("Compare() " +
         "Reports when text nodes are added / removed / edited", function(assert) {
-        var $a = $(".test-container").eq(0),
-            a = $a.get(0),
-            $b = $(".test-container").eq(1),
-            b = $b.get(0), compare;
-
         $("strong", $b).text("boold");
 
         compare = new Compare({
@@ -249,10 +241,6 @@
 
       QUnit.test("Compare() " +
         "Reports when elements are moved", function(assert) {
-        var $a = $(".test-container").eq(0),
-            a = $a.get(0),
-            $b = $(".test-container").eq(1),
-            b = $b.get(0), compare;
 
         // Move the em tag before the span
         $("span", $b).before($("em", $b));
@@ -273,27 +261,20 @@
         );
 
         // Swap the pre and the strong around
-        $("pre", $b).before($("strong", $b));
+        $(".container-1", $b).before($(".container-2", $b));
 
         compare = new Compare({
           a: a,
           b: b
         });
 
-        // Because we swapped the elements around, this generates 2 more
-        // differences. When an element is found in a position different from
-        // where it used to be, we check to see if the element following it
-        // has also changed. If it has, we deduce that the element has been moved
-        // Therefore when you swap elements around, they are both followed by
-        // different elements, and hence, have moved.
-        assert.equal(compare.differenceCount, 3,
-          "Moving a further element results in 2 more changes being reported"
+        assert.equal(compare.differenceCount, 2,
+          "Moving a further element results in another movement being reported"
         );
 
         // The order isn't really important
         assert.deepEqual(compare.differences.moved, [
-            [$("strong", $a).get(0), $("strong", $b).get(0)],
-            [$("pre", $a).get(0), $("pre", $b).get(0)],
+            [$(".container-2", $a).get(0), $(".container-2", $b).get(0)],
             [$("em", $a).get(0), $("em", $b).get(0)]
           ],
           "The correct elements are reported as having been moved"
