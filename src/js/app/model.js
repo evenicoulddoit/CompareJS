@@ -156,9 +156,9 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
      * TODO: refactor
      */
     _findMovements: function() {
-      var movements = [], missingA = {}, missingB = {},
+      var missingA = {}, missingB = {},
           indexA = 1, indexB = 1,
-          nextA, nextB, sigA, sigB, followedA, followedB;
+          nextA, nextB, sigA, sigB;
 
       while(true) {
         nextA = this.elemsA[indexA];
@@ -190,28 +190,14 @@ function(types, regexp, DOM, visual, traverse, exceptions) { "use strict";
 
             // If the A element has been seen before, remove it from the list
             if(sigA in missingA) {
-              followedA = traverse.nextOrParent(nextA)._sig;
-              followedB = traverse.nextOrParent(missingA[sigA])._sig;
-
-              // If element following A has changed, report A as having moved
-              if(followedA !== followedB && movements.indexOf(followedB) === -1) {
-                movements.push(sigA);
-                this._difference("moved", nextA, missingA[sigA]);
-              }
+              this._difference("moved", nextA, missingA[sigA]);
               delete missingA[sigA];
               indexA ++;
             }
 
             // If the B element has been seen before, remove it from the list
             if(sigB in missingB) {
-              followedA = traverse.nextOrParent(missingB[sigB])._sig;
-              followedB = traverse.nextOrParent(nextB)._sig;
-
-              // If element following B has changed, report B as having moved
-              if(followedA !== followedB && movements.indexOf(followedA) === -1) {
-                movements.push(sigB);
-                this._difference("moved", missingB[sigB], nextB);
-              }
+              this._difference("moved", nextA, missingB[sigB]);
               delete missingB[sigB];
               indexB ++;
             }

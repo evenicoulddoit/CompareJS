@@ -12,17 +12,29 @@
             "<div id=\"container-a\" class=\"test-container\">" +
               "<div class=\"body\"> " +
                 "<span>span</span>" +
-                "<a href=\"url\">" +
+                "<a class=\"anchor\" href=\"url\">" +
                   "<img src=\"image\" alt=\"sample image\" />" +
                 "</a>" +
                 "<div class=\"container-1\">" +
-                  "<pre> spaces important </pre> " +
+                  "<a>" +
+                    "<pre> spaces important </pre> " +
+                  "</a>" +
                 "</div>" +
                 "<div class=\"container-2\">" +
-                  "<strong title=\"important\">bold</strong>" +
+                  "<a>" +
+                    "<strong title=\"important\">bold</strong>" +
+                  "</a>" + 
                 "</div>" +
                 "<div class=\"container-3\">" +
-                  "<u class=\"take-note\">underlined</u>" +
+                  "<a>" + 
+                    "<u class=\"take-note\">under</u>" +
+                  "</a>" +
+                  "<a>" + 
+                    "<u class=\"take-note\">lined</u>" +
+                  "</a>" +
+                  "<a>" + 
+                    "<u class=\"take-note\">boss</u>" +
+                  "</a>" +
                 "</div>" +
                 "<em></em>" +
               "</div>" +
@@ -200,7 +212,7 @@
           "The correct elements are reported as having changed"
         );
 
-        $("a", $b).before("text node");
+        $(".anchor", $b).before("text node");
 
         compare = new Compare({
           a: a,
@@ -242,6 +254,16 @@
       QUnit.test("Compare() " +
         "Reports when elements are moved", function(assert) {
 
+        // Proper movement rationalisation not yet worked out. Don't want to
+        // avoid reporting something, so for now we literally report all
+        // elements which we find to be out of place. We should be able to take
+        // this information and group it better, but this is WIP.
+
+        var movements = 0,
+            wasMoved = false,
+            $anchorsA = $(".container-3 a", $a),
+            $anchorsB = $(".container-3 a", $b);
+
         // Move the em tag before the span
         $("span", $b).before($("em", $b));
 
@@ -250,34 +272,45 @@
           b: b
         });
 
-        assert.equal(compare.differenceCount, 1,
+        movements = compare.differenceCount;
+
+        assert.ok(movements > 0,
           "Moving an element results in a change being reported"
         );
 
-        assert.deepEqual(compare.differences.moved, [
-            [$("em", $a).get(0), $("em", $b).get(0)]
-          ],
-          "The correct elements are reported as having been moved"
+        $.each(compare.differences.moved, function(i, moved) {
+          if(moved[0] === $("em", $a).get(0)) {
+            wasMoved = true;
+          }
+        });
+
+        assert.ok(wasMoved,
+          "The em tag was correctly reported as having been moved"
         );
 
-        // Swap the pre and the strong around
-        $(".container-1", $b).before($(".container-2", $b));
+        // Place the final anchor from container-3 at the beginning
+        $anchorsB.eq(0).before($anchorsB.eq(2));
 
         compare = new Compare({
           a: a,
           b: b
         });
 
-        assert.equal(compare.differenceCount, 2,
-          "Moving a further element results in another movement being reported"
+        assert.ok(compare.differenceCount > movements,
+          "Moving a further element results in more reports"
         );
 
-        // The order isn't really important
-        assert.deepEqual(compare.differences.moved, [
-            [$(".container-2", $a).get(0), $(".container-2", $b).get(0)],
-            [$("em", $a).get(0), $("em", $b).get(0)]
-          ],
-          "The correct elements are reported as having been moved"
+        movements = compare.differenceCount;
+        wasMoved = false;
+
+        $.each(compare.differences.moved, function(i, moved) {
+          if(moved[0] === $anchorsA.get(2)) {
+            wasMoved = true;
+          }
+        });
+
+        assert.ok(wasMoved,
+          "The final anchor is reported as having moved"
         );
       });
 
