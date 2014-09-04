@@ -208,6 +208,7 @@ define(function(require) { "use strict";
             aspect, reports, li, count, i;
 
         this.wrapper.classList.remove("loading");
+        this.wrapper.classList.add("with-response");
 
         for(aspect in aspects) {
           reports = aspects[aspect];
@@ -231,6 +232,7 @@ define(function(require) { "use strict";
 
       differencesFalse: function() {
         this.wrapper.classList.remove("loading");
+        this.wrapper.classList.add("with-response");
         this.response.setAttribute("class", "identical");
         this.responseIcon.setAttribute("class", "fa fa-check-circle");
         this.responseSummary.innerHTML = "Pages are identical";
