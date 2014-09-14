@@ -32,44 +32,48 @@ define(["specificity"], function(specificity) { "use strict";
         return key.indexOf(rule + "-") === 0;
       });
 
-      // We can only shorthand if all values are set
-      if(keys.length == 4) {
+      // We can only shorthand if all values are set and belong to the same rule
+      if(keys.length !== 4 ||
+         !equalValues(differences, keys, "src") ||
+         !equalValues(differences, keys, "selector")) {
+        return;
+      }
 
-        // All values identical
-        if(equalValues(differences, keys)) {
-          differences[rule] = differences[keys[0]];
-        }
+      // We're going to combine into one, so set the base object on which to build
+      differences[rule] = differences[keys[0]];
+
+      // If the values are not all equal, we'll need to format the values properly
+      if(!equalValues(differences, keys)) {
 
         // Equal left and values, required at least for a shorthand
-        else if(equalValues(differences, [rule + "-left", rule + "-right"])) {
+        if(equalValues(differences, [rule + "-left", rule + "-right"])) {
 
           // Equal x's and equal y's
           if(equalValues(differences, [rule + "-top", rule + "-bottom"])) {
-            differences[rule] = differences[rule + "-top"] + " " +
-                                differences[rule + "-left"];
+            differences[rule].value = [differences[rule + "-top"].value,
+                                       differences[rule + "-left"].value].join(" ");
           }
 
           // Equal x's different top and bottom
           else {
-            differences[rule] = differences[rule + "-top"] + " " +
-                                differences[rule + "-left"] + " " +
-                                differences[rule + "-bottom"];
-
+            differences[rule].value = [differences[rule + "-top"].value,
+                                       differences[rule + "-left"].value,
+                                       differences[rule + "-bottom"].value].join(" ");
           }
         }
 
         // All different
         else {
-          differences[rule] = differences[rule + "-top"] + " " +
-                              differences[rule + "-right"] + " " +
-                              differences[rule + "-bottom"] + " " +
-                              differences[rule + "-left"];
+          differences[rule].value = [differences[rule + "-top"].value,
+                                     differences[rule + "-right"].value,
+                                     differences[rule + "-bottom"].value,
+                                     differences[rule + "-left"].value].join(" ");
         }
-
-        removeKeys(differences, [
-          rule + "-top", rule + "-right", rule + "-bottom", rule + "-left"
-        ]);
       }
+
+      removeKeys(differences, [
+        rule + "-top", rule + "-right", rule + "-bottom", rule + "-left"
+      ]);
     });
 
     return differences;
@@ -117,16 +121,22 @@ define(["specificity"], function(specificity) { "use strict";
         styleName, styleB;
 
     for(styleName in stylesA) {
-      styleB = (stylesB[styleName] || {}).value;
-      if(stylesA[styleName].value != styleB) {
-        differences[styleName] = [stylesA[styleName].value, styleB];
+      styleB = stylesB[styleName] || {};
+      if(stylesA[styleName].value != styleB.value) {
+        differences[styleName] = {
+          a: stylesA[styleName],
+          b: styleB.value ? styleB : undefined
+        };
       }
       checked.push(styleName);
     }
 
     for(styleName in stylesB) {
       if(checked.indexOf(styleName) == -1) {
-        differences[styleName] = [undefined, stylesB[styleName].value];
+        differences[styleName] = {
+          a: undefined,
+          b: stylesB[styleName]
+        };
       }
     }
 
@@ -178,7 +188,7 @@ define(["specificity"], function(specificity) { "use strict";
           // specificity-beating rules
           if(specs.length) {
             spec = Math.max.apply(Math, specs);
-            specificityAdd(spec, styles, rule.style);
+            specificityAdd(spec, styles, rule);
           }
         }
       }
@@ -214,11 +224,14 @@ define(["specificity"], function(specificity) { "use strict";
    * specificity of the selector is at least as high as the existing
    * @param {Number} spec - The specificty value for these new rules
    * @param {Object} existingStyles - The existing rules
-   * @param {CSSStyleDeclaration} newStyles - The new rules to conditionally add
+   * @param {CSSStyleRule} newRules - The new rule of styles to conditionally add
    * @returns {Object} the existing styles
    */
-  function specificityAdd(spec, existingStyles, newStyles) {
-    var length = newStyles.length,
+  function specificityAdd(spec, existingStyles, newRules) {
+    var newStyles = newRules.style,
+        newSelector = newRules.selectorText,
+        newSrc = newRules.parentStyleSheet.href,
+        length = newStyles.length,
         styleOrig, styleName, i;
 
     for(i = 0; i < length; i++) {
@@ -228,7 +241,9 @@ define(["specificity"], function(specificity) { "use strict";
       if(!(styleName in existingStyles && spec < existingStyles[styleName].specificity)) {
         existingStyles[styleName] = {
           specificity: spec,
-          value: newStyles.getPropertyValue(styleOrig)
+          value: newStyles.getPropertyValue(styleOrig),
+          src: newSrc,
+          selector: newSelector
         };
       }
     }
@@ -250,13 +265,15 @@ define(["specificity"], function(specificity) { "use strict";
     return styleName;
   }
 
-  function equalValues(obj, keys) {
+  function equalValues(obj, keys, innerKey) {
     var length = keys.length,
         value, i;
 
+    innerKey = innerKey || "value";
+
     for(i = 0; i < length; i++) {
-      if(i === 0) value = obj[keys[i]];
-      else if(obj[keys[i]] !== value) return false;
+      if(i === 0) value = obj[keys[i]][innerKey];
+      else if(obj[keys[i]][innerKey] !== value) return false;
     }
 
     return true;
@@ -342,11 +359,11 @@ define(["specificity"], function(specificity) { "use strict";
 
         for(difference in ruleDifferences) {
           if(computedDifferences.filter(startsWith(difference)).length > 0) {
-            if(ruleDifferences[difference][0] !== undefined) {
-              sharedDifferences.a[difference] = ruleDifferences[difference][0];
+            if(ruleDifferences[difference].a !== undefined) {
+              sharedDifferences.a[difference] = ruleDifferences[difference].a;
             }
-            if(ruleDifferences[difference][1] !== undefined) {
-              sharedDifferences.b[difference] = ruleDifferences[difference][1];
+            if(ruleDifferences[difference].b !== undefined) {
+              sharedDifferences.b[difference] = ruleDifferences[difference].b;
             }
             sharedCount ++;
           }

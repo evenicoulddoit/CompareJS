@@ -304,12 +304,12 @@ define(function(require) { "use strict";
 
             for(ruleName in diff.a) {
               if(aCount > 1) aText += "\n  ";
-              aText += ruleName + ": " + diff.a[ruleName] + "; ";
+              aText += ruleName + ": " + diff.a[ruleName].value + "; ";
             }
 
             for(ruleName in diff.b) {
               if(bCount > 1) bText += "\n  ";
-              bText += ruleName + ": " + diff.b[ruleName] + "; ";
+              bText += ruleName + ": " + diff.b[ruleName].value + "; ";
             }
 
             if(aCount > 1) aText += "\n";

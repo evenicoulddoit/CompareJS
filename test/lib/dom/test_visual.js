@@ -2,6 +2,19 @@
   QUnit.stop();
 
   /**
+   * Mock a CSSRule object
+   * @param {Object} properties - A list of properties to use
+   * @param {MockCSSStyleDeclaration} properties.style
+   * @param {String} [properties.src] - The source CSS file URL
+   * @param {String} [properties.selector] - The selector text used
+   */
+  function MockCSSRule(props) {
+    this.parentStyleSheet = { href: (props.src || null) };
+    this.selectorText = props.selector || "*";
+    this.style = props.style;
+  }
+
+  /**
    * Mock a CSSStyleDeclaration
    * @param {Object} styles - an object of key-value CSS rule pairs
    */
@@ -141,66 +154,88 @@
         // All identical margin rules, combine into one.
         // Leave the other rules as they are
         var identical = {
-          "margin-top": "5px",
-          "margin-right": "5px",
-          "margin-bottom": "5px",
-          "margin-left": "5px",
-          "a-rule": "to-ignore"
+          "margin-top": { "value": "5px" },
+          "margin-right": { "value": "5px" },
+          "margin-bottom": { "value": "5px" },
+          "margin-left": { "value": "5px" },
+          "a-rule": { "value": "to-ignore" }
         };
 
         assert.deepEqual(visual._shorthandMarginPadding(identical), {
-            "margin": "5px",
-            "a-rule": "to-ignore"
+            "margin": { "value": "5px" },
+            "a-rule": { "value": "to-ignore" }
           },
           "All equal margin values are combined into 1 value."
         );
 
-        var two_value = {
-          "padding-top": "5px",
-          "padding-right": "10px",
-          "padding-bottom": "5px",
-          "padding-left": "10px"
+        var diffSelector = {
+          "margin-top": { "value": "5px" },
+          "margin-right": { "value": "5px", "selector": "different" },
+          "margin-bottom": { "value": "5px" },
+          "margin-left": { "value": "5px" },
         };
 
-        assert.deepEqual(visual._shorthandMarginPadding(two_value), {
-            "padding": "5px 10px",
+        assert.deepEqual(visual._shorthandMarginPadding(diffSelector), diffSelector,
+          "If any rules come from a different selector, don't combine at all"
+        );
+
+        var diffSrc = {
+          "margin-top": { "value": "5px" },
+          "margin-right": { "value": "5px", "src": "different" },
+          "margin-bottom": { "value": "5px" },
+          "margin-left": { "value": "5px" },
+        };
+
+        assert.deepEqual(visual._shorthandMarginPadding(diffSrc), diffSrc,
+          "If any rules come from a different stylesheet, don't combine at all"
+        );
+
+        var twoValue = {
+          "padding-top": { "value": "5px" },
+          "padding-right": { "value": "10px" },
+          "padding-bottom": { "value": "5px" },
+          "padding-left": { "value": "10px" }
+        };
+
+        assert.deepEqual(visual._shorthandMarginPadding(twoValue), {
+            "padding": { "value": "5px 10px" }
           },
           "Equal horizontal and vertical padding values are combined into 2 values."
         );
 
-        var three_value = {
-          "margin-top": "5px",
-          "margin-right": "10px",
-          "margin-bottom": "15px",
-          "margin-left": "10px"
+        var threeValue = {
+          "margin-top": { "value": "5px" },
+          "margin-right": { "value": "10px" },
+          "margin-bottom": { "value": "15px" },
+          "margin-left": { "value": "10px" }
         };
 
-        assert.deepEqual(visual._shorthandMarginPadding(three_value), {
-            "margin": "5px 10px 15px",
+        assert.deepEqual(visual._shorthandMarginPadding(threeValue), {
+            "margin": { "value": "5px 10px 15px" }
           },
           "Equal left and right margin values are combined into 3 values."
         );
 
-        var four_value = {
-          "padding-top": "5px",
-          "padding-right": "10px",
-          "padding-bottom": "15px",
-          "padding-left": "20px"
+        var fourValue = {
+          "padding-top": { "value": "5px" },
+          "padding-right": { "value": "10px" },
+          "padding-bottom": { "value": "15px" },
+          "padding-left": { "value": "20px" }
         };
 
-        assert.deepEqual(visual._shorthandMarginPadding(four_value), {
-            "padding": "5px 10px 15px 20px",
+        assert.deepEqual(visual._shorthandMarginPadding(fourValue), {
+            "padding": { "value": "5px 10px 15px 20px" }
           },
           "All different padding values are combined into 4 values."
         );
 
-        var missing_one = {
-          "margin-top": "5px",
-          "margin-right": "10px",
-          "margin-bottom": "15px",
+        var missingOne = {
+          "margin-top": { "value": "5px" },
+          "margin-right": { "value": "10px" },
+          "margin-bottom": { "value": "15px" }
         };
 
-        assert.deepEqual(visual._shorthandMarginPadding(missing_one), missing_one,
+        assert.deepEqual(visual._shorthandMarginPadding(missingOne), missingOne,
           "When one margin value is missing, don't combine."
         );
       });
@@ -254,30 +289,68 @@
             differences;
 
         differences = visual._styleRuleDifferences(a, b);
-        assert.deepEqual(differences, {});
+        assert.deepEqual(differences, {},
+          "Identical elements report no differences"
+        );
 
         $a.addClass("color");
         differences = visual._styleRuleDifferences(a, b);
         assert.deepEqual(differences, {
-            "color": [browserColourFn("#111"), browserColourFn("#000")]
+            "color": {
+              "a": {
+                "value": browserColourFn("#111"),
+                "src": null,
+                "selector": ".color",
+                "specificity": 10
+              },
+              "b": {
+                "value": browserColourFn("#000"),
+                "src": null,
+                "selector": "div",
+                "specificity": 1
+              }
+            }
           },
           "Adding a class to A which changes its color is recognised"
         );
 
         $b.addClass("display");
         differences = visual._styleRuleDifferences(a, b);
-        assert.deepEqual(differences, {
-            "color": [browserColourFn("#111"), browserColourFn("#000")],
-            "display": ["block", "inline-block"]
-          },
+
+        assert.deepEqual(differences.display, {
+              "a": {
+                "value": "block",
+                "src": null,
+                "selector": "div",
+                "specificity": 1
+              },
+              "b": {
+                "value": "inline-block",
+                "src": null,
+                "selector": ".display",
+                "specificity": 10
+              }
+            },
           "Adding a class to B which changes its display is recognised"
+        );
+
+        assert.strictEqual(Object.keys(differences).length, 2,
+          "The correct number of differences are reported"
         );
 
         $a.attr("class", "background-color");
         $b.removeClass();
         differences = visual._styleRuleDifferences(a, b);
         assert.deepEqual(differences, {
-            "background-color": [hexToRgb("#eee"), undefined]
+          "background-color": {
+              "a": {
+                    "value": hexToRgb("#eee"),
+                    "src": null,
+                    "selector": ".background-color",
+                    "specificity": 10
+              },
+              "b": undefined,
+            }
           },
           "Adding a rule to A which B doesn't have returns undefined for B"
         );
@@ -290,19 +363,54 @@
             a = $a.get(0);
 
         assert.deepEqual(visual._findRulesFor(a), {
-            "display": { "specificity": 1, "value": "block" },
-            "font-weight": { "specificity": 1, "value": "400" },
-            "color": { "specificity": 1, "value": browserColourFn("#000") }
+            "display": {
+              "specificity": 1,
+              "src": null,
+              "selector": "div",
+              "value": "block"
+            },
+            "font-weight": {
+              "specificity": 1,
+              "src": null,
+              "selector": "div",
+              "value": "400"
+            },
+            "color": {
+              "specificity": 1,
+              "src": null,
+              "selector": "div",
+              "value": browserColourFn("#000")
+            }
           },
-          "Checking against the element #foo retrieves all the .div styles"
+          "Checking against the element #foo retrieves all the div styles"
         );
 
         $a.addClass("position");
         assert.deepEqual(visual._findRulesFor(a), {
-            "display": { "specificity": 1, "value": "block" },
-            "font-weight": { "specificity": 1, "value": "400" },
-            "color": { "specificity": 1, "value": browserColourFn("#000") },
-            "position": { "specificity": 11, "value": "absolute" }
+            "display": {
+              "specificity": 1,
+              "value": "block",
+              "selector": "div",
+              "src": null
+            },
+            "font-weight": {
+              "specificity": 1,
+              "value": "400",
+              "selector": "div",
+              "src": null
+            },
+            "color": {
+              "specificity": 1,
+              "value": browserColourFn("#000"),
+              "selector": "div",
+              "src": null
+            },
+            "position": {
+              "specificity": 11,
+              "value": "absolute",
+              "selector": "div.position",
+              "src": null
+            }
           },
           "Adding a class which matches a more specific rule gets picked up"
         );
@@ -345,47 +453,107 @@
       QUnit.test("_specificityAdd() " +
         "Replaces existing style if specificity is at least as much", function(assert) {
 
-        var existing = {};
+        var existing = {},
+            rule;
 
-        visual._specificityAdd(1, existing, new MockCSSStyleDeclaration({
-          "background-color": "rgb(255, 255, 255)"
-        }));
+        rule = new MockCSSRule({
+          src: "a.css",
+          selector: "div",
+          style: new MockCSSStyleDeclaration({
+            "background-color": "rgb(255, 255, 255)"
+          })
+        });
+
+        visual._specificityAdd(1, existing, rule);
 
         assert.deepEqual(existing, {
-            "background-color": { "specificity": 1, "value": "rgb(255, 255, 255)" }
+            "background-color": {
+              "specificity": 1,
+              "value": "rgb(255, 255, 255)",
+              "src": "a.css",
+              "selector": "div"
+            }
           },
           "creates the general object pattern we were expecting"
         );
 
-        visual._specificityAdd(11, existing, new MockCSSStyleDeclaration({
-          "padding": "5px"
-        }));
+        rule = new MockCSSRule({
+          src: "b.css",
+          selector: "#foo div",
+          style: new MockCSSStyleDeclaration({
+            "padding": "5px"
+          })
+        });
+
+        visual._specificityAdd(11, existing, rule);
 
         assert.deepEqual(existing, {
-            "background-color": { "specificity": 1, "value": "rgb(255, 255, 255)" },
-            "padding": { "specificity": 11, "value": "5px" }
+            "background-color": {
+              "specificity": 1,
+              "value": "rgb(255, 255, 255)",
+              "src": "a.css",
+              "selector": "div"
+            },
+            "padding": {
+              "specificity": 11,
+              "value": "5px",
+              "src": "b.css",
+              "selector": "#foo div"
+            }
           },
           "continues to add styles to the list"
         );
 
-        visual._specificityAdd(11, existing, new MockCSSStyleDeclaration({
-          "padding": "10px"
-        }));
+        rule = new MockCSSRule({
+          src: "c.css",
+          selector: "#foo .bar",
+          style: new MockCSSStyleDeclaration({
+            "padding": "10px"
+          })
+        });
+
+        visual._specificityAdd(11, existing, rule);
 
         assert.deepEqual(existing, {
-            "background-color": { "specificity": 1, "value": "rgb(255, 255, 255)" },
-            "padding": { "specificity": 11, "value": "10px" }
+            "background-color": {
+              "specificity": 1,
+              "value": "rgb(255, 255, 255)",
+              "src": "a.css",
+              "selector": "div"
+            },
+            "padding": {
+              "specificity": 11,
+              "value": "10px",
+              "src": "c.css",
+              "selector": "#foo .bar"
+            }
           },
           "Overwrites values when new style's specificities are at least as much"
         );
 
-        visual._specificityAdd(1, existing, new MockCSSStyleDeclaration({
-          "padding": "5px"
-        }));
+        rule = new MockCSSRule({
+          src: "d.css",
+          selector: ".bar",
+          style: new MockCSSStyleDeclaration({
+            "padding": "10px"
+          })
+        });
+
+        visual._specificityAdd(1, existing, rule);
 
         assert.deepEqual(existing, {
-            "background-color": { "specificity": 1, "value": "rgb(255, 255, 255)" },
-            "padding": { "specificity": 11, "value": "10px" }
+            "background-color": {
+              "specificity": 1,
+              "value": "rgb(255, 255, 255)",
+              "src": "a.css",
+              "selector": "div"
+            },
+            "padding": {
+              "specificity": 11,
+              "value": "10px",
+              "src": "c.css",
+              "selector": "#foo .bar"
+            }
           },
           "New styles with lower specificity are not added to the list"
         );
@@ -412,9 +580,9 @@
         "Identifies when the specified values in an Array are equal", function(assert) {
         assert.strictEqual(
           visual._equalValues({
-            a: 1,
-            b: 1,
-            c: 2
+            a: { "value": 1 },
+            b: { "value": 1, },
+            c: { "value": 2 }
           }, ["a", "b"]),
           true,
           "a and b have equal values"
@@ -422,21 +590,30 @@
 
         assert.strictEqual(
           visual._equalValues({
-            a: 1,
-            b: 1,
-            c: 2
+            a: { "value": 1, },
+            b: { "value": 1, },
+            c: { "value": 2 }
           }, ["a", "b", "c"]),
           false,
           "a, b and c do not all have equal values"
         );
 
         assert.strictEqual(visual._equalValues({
-            a: 1,
-            b: 1,
-            c: "1"
+            a: { "value": 1, },
+            b: { "value": 1, },
+            c: { "value": "1" }
           }, ["a", "b", "c"]),
           false,
           "a, b and c do not all have strictly equal values"
+        );
+
+        assert.strictEqual(visual._equalValues({
+            a: { "inner": 1, },
+            b: { "inner": 1, },
+            c: { "inner": "1" }
+          }, ["a", "b", "c"], "inner"),
+          false,
+          "Changing the inner key works as expected"
         );
       });
 
@@ -469,8 +646,22 @@
         $a.addClass("color");
 
         assert.deepEqual(visual.elemsDiffer(a, b), {
-            "a": { "color": browserColourFn("#111") },
-            "b": { "color": browserColourFn("#000") }
+            "a": {
+              "color": {
+                "value": browserColourFn("#111"),
+                "selector": ".color",
+                "src": null,
+                "specificity": 10
+              }
+            },
+            "b": {
+              "color": {
+                "value": browserColourFn("#000"),
+                "selector": "div",
+                "src": null,
+                "specificity": 1
+              }
+            }
           },
           "Elements with different colours returns their differences"
         );
