@@ -106,6 +106,23 @@ code {
   }
 }
 
+.side-by-side code {
+  flex: 1;
+
+  &:not(:first-child) {
+    margin-left: 5px;
+  }
+}
+
+code span[data-src]:hover::after {
+  content: attr(data-selector) " (" attr(data-src) ")";
+  color: #eee;
+  background-color: #444;
+  border-radius: 4px;
+  font-size: .8em;
+  padding: .2em 0.6em;
+}
+
 button {
   outline: none;
 }

@@ -1,6 +1,5 @@
-define([], function() { "use strict";
-  var MULTI_SPACE_REGEX = /\s{2,}/g,
-      IGNORE_ATTRIBUTE_SPACES = ["class"];
+define(["regexp"], function(regexp) { "use strict";
+  var IGNORE_ATTRIBUTE_SPACES = ["class"];
 
   return {
 
@@ -46,7 +45,7 @@ define([], function() { "use strict";
         }
       }
 
-      return nodes.join(" ").replace(MULTI_SPACE_REGEX, " ").trim();
+      return nodes.join(" ").replace(regexp.MULTI_SPACE, " ").trim();
     },
 
     getAttrStr: function(elem) {
@@ -79,7 +78,7 @@ define([], function() { "use strict";
       var val = elem.getAttribute(attr);
 
       if(IGNORE_ATTRIBUTE_SPACES.indexOf(attr) !== -1) {
-        val = val.trim().replace(MULTI_SPACE_REGEX, " ");
+        val = val.trim().replace(regexp.MULTI_SPACE, " ");
       }
 
       return val;
@@ -101,8 +100,8 @@ define([], function() { "use strict";
     },
 
     sameIgnoringSpaces: function(nodeA, nodeB) {
-      return (nodeA.nodeValue.replace(MULTI_SPACE_REGEX, "") ===
-              nodeB.nodeValue.replace(MULTI_SPACE_REGEX, ""));
+      return (nodeA.nodeValue.replace(regexp.MULTI_SPACE, "") ===
+              nodeB.nodeValue.replace(regexp.MULTI_SPACE, ""));
     }
   };
 });

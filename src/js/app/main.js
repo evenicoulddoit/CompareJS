@@ -1,6 +1,6 @@
 define(function(require) { "use strict";
 
-  require(["promise", "app/model"], function(Promise, Compare) {
+  require(["promise", "app/model", "regexp"], function(Promise, Compare, regexp) {
     var log = window.console.log.bind(window.console);
 
     if(window.location.search.indexOf("?same-origin") === -1) {
@@ -296,36 +296,48 @@ define(function(require) { "use strict";
 
           case "style":
             var diff = report[0]._styleDiff,
-                affecting = report[0]._styleAffects,
-                aText = "", bText = "",
-                aCount = Object.keys(diff.a).length,
-                bCount = Object.keys(diff.b).length,
-                ruleName;
+                affecting = report[0]._styleAffects;
 
-            for(ruleName in diff.a) {
-              if(aCount > 1) aText += "\n  ";
-              aText += ruleName + ": " + diff.a[ruleName].value + "; ";
-            }
-
-            for(ruleName in diff.b) {
-              if(bCount > 1) bText += "\n  ";
-              bText += ruleName + ": " + diff.b[ruleName].value + "; ";
-            }
-
-            if(aCount > 1) aText += "\n";
-            if(bCount > 1) bText += "\n";
 
             return "Style change affecting " + affecting + " element(s)" +
                    "<code class=\"c\">" +
                      htmlEntities(report[0]._originalSig) +
                    "</code>" + 
-                   "<code class=\"a\">" +
-                     "{ " + aText + "}" +
-                   "</code>" +
-                   "<code class=\"b\">" +
-                     "{ " + bText + "}" +
-                   "</code>";
+                   "<div class=\"side-by-side\">" + 
+                     "<code class=\"a\">" +
+                       this.drawStyle(diff.a) +
+                     "</code>" +
+                     "<code class=\"b\">" +
+                       this.drawStyle(diff.b) +
+                     "</code>" +
+                   "</div>";
         }
+      },
+
+      drawStyle: function(styles) {
+        var maxSelector = 70,
+            html = "{ ",
+            sortedKeys = Object.keys(styles).sort(),
+            count = sortedKeys.length,
+            styleName, style, selector, src, i;
+
+        for(i = 0; i < count; i ++) {
+          styleName = sortedKeys[i];
+          style = styles[styleName];
+          src = style.src || "inline";
+          selector = htmlEntities(style.selector).replace(regexp.MULTI_SPACE, " ");
+
+          if(selector.length > maxSelector) {
+            selector = "..." + selector.slice(-(maxSelector - 3));
+          }
+          if(count > 1) html += "\n  ";
+          html += "<span data-src=\"" + htmlEntities(src) + "\"" +
+                        "data-selector=\"" + htmlEntities(selector) + "\">" +
+                    styleName + ": " + style.value + "; " +
+                  "</span>";
+        }
+        if(count > 1) html += "\n";
+        return html + "}";
       },
 
       compareFailed: function(response) {
