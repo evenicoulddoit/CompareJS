@@ -1,5 +1,6 @@
 Compare.js
 ==========
+**[Demo video](https://www.youtube.com/watch?v=jhkbO4FqDEo) / [Explanation video](https://www.youtube.com/watch?v=xPAnGNsBIGM)**
 
 Compare.js is a comparison tool which can be used to find both DOM-based and visual changes between two web pages. Compare.js is entirely browser driven, and relies on web-server configuration in order to work properly.
 
